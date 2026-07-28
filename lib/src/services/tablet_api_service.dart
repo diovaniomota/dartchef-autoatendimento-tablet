@@ -20,6 +20,22 @@ class TabletApiService {
 
   final http.Client _client;
 
+  // Sem timeout, um IP inalcancavel (ex: pareamento com um endereco de VPN
+  // que nao responde) deixava a tela presa em "carregando" para sempre -
+  // nem sucesso nem erro. Com o timeout, o usuario ve uma mensagem clara
+  // em poucos segundos e pode tentar de novo ou reparear.
+  static const _timeout = Duration(seconds: 10);
+
+  Future<http.Response> _withTimeout(Future<http.Response> future) {
+    return future.timeout(
+      _timeout,
+      onTimeout: () => throw const TabletApiException(
+        'Não foi possível conectar ao PDV. Verifique se o computador está ligado, '
+        'na mesma rede Wi-Fi, e repareie o tablet se o endereço tiver mudado.',
+      ),
+    );
+  }
+
   String _normalizeBaseUrl(String value) {
     final trimmed = value.trim();
     if (trimmed.endsWith('/')) {
@@ -34,7 +50,7 @@ class TabletApiService {
       '$baseUrl/api/public/menu?orgId=${Uri.encodeQueryComponent(settings.organizationId)}&tableCode=${Uri.encodeQueryComponent(settings.tableCode)}',
     );
 
-    final response = await _client.get(uri);
+    final response = await _withTimeout(_client.get(uri));
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
 
     if (response.statusCode >= 400) {
@@ -55,7 +71,7 @@ class TabletApiService {
     final baseUrl = _normalizeBaseUrl(settings.apiBaseUrl);
     final uri = Uri.parse('$baseUrl/api/public/orders');
 
-    final response = await _client.post(
+    final response = await _withTimeout(_client.post(
       uri,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
@@ -70,7 +86,7 @@ class TabletApiService {
                 })
             .toList(),
       }),
-    );
+    ));
 
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
 
@@ -92,7 +108,7 @@ class TabletApiService {
     final baseUrl = _normalizeBaseUrl(settings.apiBaseUrl);
     final uri = Uri.parse('$baseUrl/api/public/service-call');
 
-    final response = await _client.post(
+    final response = await _withTimeout(_client.post(
       uri,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
@@ -100,7 +116,7 @@ class TabletApiService {
         'tableCode': settings.tableCode,
         'callType': callType,
       }),
-    );
+    ));
 
     if (response.statusCode >= 400) {
       final payload = jsonDecode(response.body) as Map<String, dynamic>;
@@ -117,7 +133,7 @@ class TabletApiService {
       '$baseUrl/api/public/orders/history?orgId=${Uri.encodeQueryComponent(settings.organizationId)}&tableCode=${Uri.encodeQueryComponent(settings.tableCode)}',
     );
 
-    final response = await _client.get(uri);
+    final response = await _withTimeout(_client.get(uri));
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
 
     if (response.statusCode >= 400) {
