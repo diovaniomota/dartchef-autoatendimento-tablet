@@ -24,14 +24,29 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   }
 
   void _onDetect(BarcodeCapture capture) {
-    if (_scanned) return;
+    if (_scanned || !mounted) return;
     final barcode = capture.barcodes.firstOrNull;
     if (barcode == null || barcode.rawValue == null) return;
 
     final code = barcode.rawValue!.trim();
     if (code.isEmpty) return;
 
-    setState(() => _scanned = true);
+    _scanned = true;
+    _finishScan(code);
+  }
+
+  // Para a câmera ANTES de desmontar a tela. O crash "'_dependents.isEmpty'
+  // is not true" (assert do framework em InheritedElement.unmount) acontecia
+  // porque o Navigator.pop() removia a árvore do MobileScanner (dentro do
+  // RotatedBox/FittedBox usado para corrigir a orientação) no mesmo frame em
+  // que a textura nativa da câmera ainda estava sendo desmontada — a corrida
+  // entre o unmount do Flutter e o descarte assíncrono da preview nativa
+  // corrompia o registro de dependentes de um InheritedWidget na subárvore
+  // (ex.: MediaQuery, usado direto no build()). Parar o controller e só
+  // então dar pop evita a corrida.
+  Future<void> _finishScan(String code) async {
+    await _controller.stop();
+    if (!mounted) return;
     Navigator.of(context).pop(code);
   }
 

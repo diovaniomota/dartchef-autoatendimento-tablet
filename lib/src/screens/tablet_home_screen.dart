@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -15,6 +17,7 @@ import '../widgets/product_card_widget.dart';
 import '../widgets/sidebar_widget.dart';
 import '../widgets/top_bar_widget.dart';
 import 'confirm_order_screen.dart';
+import 'qr_scanner_screen.dart';
 
 class TabletHomeScreen extends StatefulWidget {
   const TabletHomeScreen({super.key});
@@ -101,6 +104,43 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
 
   // ──────────────────── Settings dialog ────────────────────
 
+  // Aplica um pareamento (por QR ou manual), salva e recarrega o cardápio.
+  Future<void> _applySettings(TabletSettings next) async {
+    await _settingsService.save(next);
+    if (!mounted) return;
+    setState(() { _settings = next; _menu = null; _cart = []; _activeCategory = 'Todos'; });
+    await _loadMenu();
+  }
+
+  // Escaneia o QR gerado em Configurações > Mesas do dartchef (payload
+  // {apiBaseUrl, organizationId, tableCode}) e aplica direto, sem precisar
+  // digitar IP/organização/mesa manualmente na tela do tablet.
+  Future<void> _scanPairingQr({BuildContext? dialogContext}) async {
+    if (dialogContext != null) Navigator.of(dialogContext).pop();
+
+    final raw = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+    );
+    if (raw == null || raw.isEmpty || !mounted) return;
+
+    try {
+      final decoded = jsonDecode(raw) as Map<String, dynamic>;
+      final next = TabletSettings(
+        apiBaseUrl: (decoded['apiBaseUrl'] ?? '').toString().trim(),
+        organizationId: (decoded['organizationId'] ?? '').toString().trim(),
+        tableCode: (decoded['tableCode'] ?? '').toString().trim(),
+      );
+      if (!next.isComplete) {
+        _showMsg('QR Code incompleto. Gere um novo em Configurações > Mesas.', isError: true);
+        return;
+      }
+      await _applySettings(next);
+      _showMsg('Mesa ${next.tableCode} pareada com sucesso!');
+    } catch (_) {
+      _showMsg('QR Code inválido. Escaneie o QR de pareamento do dartchef.', isError: true);
+    }
+  }
+
   Future<void> _openSettingsDialog() async {
     final current = _settings ?? await _settingsService.load();
     final apiCtrl = TextEditingController(text: current.apiBaseUrl);
@@ -118,6 +158,34 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: () => _scanPairingQr(dialogContext: ctx),
+                  icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
+                  label: const Text('Escanear QR de pareamento', style: TextStyle(fontWeight: FontWeight.w800)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.accent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Row(
+                  children: [
+                    Expanded(child: Divider(color: AppTheme.border)),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      child: Text('ou preencha manualmente', style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+                    ),
+                    Expanded(child: Divider(color: AppTheme.border)),
+                  ],
+                ),
+              ),
               TextField(controller: apiCtrl, decoration: const InputDecoration(labelText: 'Base da API', hintText: 'http://192.168.0.x:3001')),
               const SizedBox(height: 12),
               TextField(controller: orgCtrl, decoration: const InputDecoration(labelText: 'Organization ID')),
@@ -140,11 +208,9 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
                 return;
               }
               final nav = Navigator.of(ctx);
-              await _settingsService.save(next);
+              await _applySettings(next);
               if (!mounted) return;
               nav.pop();
-              setState(() { _settings = next; _menu = null; _cart = []; _activeCategory = 'Todos'; });
-              await _loadMenu();
             },
             child: const Text('Salvar'),
           ),
