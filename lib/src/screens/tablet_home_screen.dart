@@ -115,12 +115,21 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
   // Escaneia o QR gerado em Configurações > Mesas do dartchef (payload
   // {apiBaseUrl, organizationId, tableCode}) e aplica direto, sem precisar
   // digitar IP/organização/mesa manualmente na tela do tablet.
+  //
+  // Importante: NÃO fecha o diálogo "Configurar" antes de empilhar o
+  // scanner. Fazer pop() do diálogo e, na mesma chamada síncrona (sem
+  // esperar um frame), dar push() de outra rota corrompe a árvore do
+  // Navigator — mesma falha "'_dependents.isEmpty' is not true" do crash do
+  // scanner de comanda. O diálogo fica empilhado por baixo do scanner (fica
+  // coberto, sem problema) e só é fechado depois que o scanner já retornou.
   Future<void> _scanPairingQr({BuildContext? dialogContext}) async {
-    if (dialogContext != null) Navigator.of(dialogContext).pop();
-
     final raw = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => const QrScannerScreen()),
     );
+
+    if (dialogContext != null && dialogContext.mounted) {
+      Navigator.of(dialogContext).pop();
+    }
     if (raw == null || raw.isEmpty || !mounted) return;
 
     try {
