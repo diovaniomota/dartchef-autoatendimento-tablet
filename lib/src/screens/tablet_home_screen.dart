@@ -11,6 +11,7 @@ import '../models/table_menu.dart';
 import '../models/tablet_settings.dart';
 import '../services/local_settings_service.dart';
 import '../services/tablet_api_service.dart';
+import '../services/update_service.dart';
 import '../widgets/cart_panel_widget.dart';
 import '../widgets/home_highlights_widget.dart';
 import '../widgets/product_card_widget.dart';
@@ -29,6 +30,7 @@ class TabletHomeScreen extends StatefulWidget {
 class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBindingObserver {
   final LocalSettingsService _settingsService = LocalSettingsService();
   final TabletApiService _apiService = TabletApiService();
+  final UpdateService _updateService = UpdateService();
   final TextEditingController _customerNameController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
   final NumberFormat _currency = NumberFormat.currency(locale: 'pt_BR', symbol: r'R$');
@@ -150,6 +152,74 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
     }
   }
 
+  // PIN pra impedir que qualquer cliente mexa nas configuracoes so tocando
+  // no icone de engrenagem. Verifica antes de abrir _openSettingsDialog em
+  // TODOS os pontos de entrada (icone de engrenagem, toque longo no logo,
+  // e o botao "Configurar agora" da tela inicial sem pareamento).
+  static const _settingsPin = '1707';
+
+  Future<void> _requestSettingsAccess() async {
+    final controller = TextEditingController();
+    var error = false;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          backgroundColor: AppTheme.surface,
+          title: const Text('Configurações protegidas'),
+          content: SizedBox(
+            width: 320,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Digite o PIN para continuar.', style: TextStyle(color: AppTheme.textMuted)),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  obscureText: true,
+                  keyboardType: TextInputType.number,
+                  maxLength: 8,
+                  decoration: InputDecoration(
+                    counterText: '',
+                    labelText: 'PIN',
+                    errorText: error ? 'PIN incorreto.' : null,
+                  ),
+                  onSubmitted: (_) {
+                    if (controller.text.trim() == _settingsPin) {
+                      Navigator.of(ctx).pop(true);
+                    } else {
+                      setDialogState(() => error = true);
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancelar')),
+            FilledButton(
+              onPressed: () {
+                if (controller.text.trim() == _settingsPin) {
+                  Navigator.of(ctx).pop(true);
+                } else {
+                  setDialogState(() => error = true);
+                }
+              },
+              child: const Text('Entrar'),
+            ),
+          ],
+        ),
+      ),
+    );
+    controller.dispose();
+
+    if (ok == true) {
+      await _openSettingsDialog();
+    }
+  }
+
   Future<void> _openSettingsDialog() async {
     final current = _settings ?? await _settingsService.load();
     final apiCtrl = TextEditingController(text: current.apiBaseUrl);
@@ -200,6 +270,19 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
               TextField(controller: orgCtrl, decoration: const InputDecoration(labelText: 'Organization ID')),
               const SizedBox(height: 12),
               TextField(controller: tableCtrl, decoration: const InputDecoration(labelText: 'Código da mesa', hintText: '01')),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Divider(color: AppTheme.border),
+              ),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _checkForUpdates,
+                  icon: const Icon(Icons.system_update_rounded, size: 18),
+                  label: const Text('Verificar atualização'),
+                  style: OutlinedButton.styleFrom(foregroundColor: AppTheme.textMuted, side: const BorderSide(color: AppTheme.border)),
+                ),
+              ),
             ],
           ),
         ),
@@ -227,6 +310,92 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
       ),
     );
     apiCtrl.dispose(); orgCtrl.dispose(); tableCtrl.dispose();
+  }
+
+  // ──────────────────── Atualização (GitHub Releases) ────────────────────
+
+  Future<void> _checkForUpdates() async {
+    _showMsg('Verificando atualizações...');
+    try {
+      final info = await _updateService.checkForUpdate();
+      if (!mounted) return;
+
+      if (!info.hasUpdate) {
+        _showMsg('Você já está na versão mais recente (${info.currentVersion}).');
+        return;
+      }
+
+      final shouldUpdate = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppTheme.surface,
+          title: const Text('Nova versão disponível'),
+          content: SizedBox(
+            width: 360,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Versão atual: ${info.currentVersion}', style: const TextStyle(color: AppTheme.textMuted)),
+                const SizedBox(height: 4),
+                Text('Nova versão: ${info.latestVersion}', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                if ((info.releaseNotes ?? '').trim().isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  Text(info.releaseNotes!.trim(), style: const TextStyle(color: AppTheme.textMuted, fontSize: 13)),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Depois')),
+            FilledButton(onPressed: () => Navigator.of(ctx).pop(true), child: const Text('Atualizar agora')),
+          ],
+        ),
+      );
+
+      if (shouldUpdate == true && info.downloadUrl != null) {
+        await _downloadAndInstallUpdate(info.downloadUrl!);
+      }
+    } on UpdateException catch (e) {
+      if (mounted) _showMsg(e.message, isError: true);
+    } catch (_) {
+      if (mounted) _showMsg('Não foi possível verificar atualizações. Confira a internet.', isError: true);
+    }
+  }
+
+  Future<void> _downloadAndInstallUpdate(String downloadUrl) async {
+    final progress = ValueNotifier<double>(0);
+    if (!mounted) return;
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Baixando atualização...'),
+        content: ValueListenableBuilder<double>(
+          valueListenable: progress,
+          builder: (_, value, _) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              LinearProgressIndicator(value: value > 0 ? value : null, color: AppTheme.accent, backgroundColor: AppTheme.surfaceHigh),
+              const SizedBox(height: 12),
+              Text('${(value * 100).toStringAsFixed(0)}%', style: const TextStyle(color: AppTheme.textMuted)),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      await _updateService.downloadAndInstall(downloadUrl, onProgress: (p) => progress.value = p);
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+    } catch (e) {
+      if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      if (mounted) {
+        _showMsg(e is UpdateException ? e.message : 'Falha ao baixar/instalar a atualização.', isError: true);
+      }
+    }
   }
 
   // ──────────────────── SOBRE dialog ────────────────────
@@ -577,7 +746,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
                   textAlign: TextAlign.center, style: TextStyle(fontSize: 15, color: Color(0xFFAAAAAA))),
               const SizedBox(height: 20),
               FilledButton.icon(
-                onPressed: _openSettingsDialog,
+                onPressed: _requestSettingsAccess,
                 icon: const Icon(Icons.settings_rounded),
                 label: const Text('Configurar agora'),
                 style: FilledButton.styleFrom(backgroundColor: AppTheme.accent),
@@ -800,7 +969,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
                 categories: categories,
                 activeCategory: _activeCategory,
                 onCategorySelected: (cat) => setState(() { _activeCategory = cat; _activeSubcategory = null; _searchTerm = ''; }),
-                onSettingsTap: _openSettingsDialog,
+                onSettingsTap: _requestSettingsAccess,
                 onAboutTap: _showAboutDialog,
               ),
 

@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- Necessario pro app conseguir abrir o instalador do APK baixado
+         (atualizacao dentro do proprio app, sem passar pela Play Store). -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <application
         android:label="DartFood Mesa"
         android:name="${applicationName}"
