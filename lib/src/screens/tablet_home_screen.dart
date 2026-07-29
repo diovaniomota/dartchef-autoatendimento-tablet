@@ -220,10 +220,11 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
 
     if (ok == true) {
       if (!mounted) return;
-      // Mesmo bug do scanner/pareamento: abrir outro showDialog logo depois
-      // do pop do PIN, no mesmo frame, corrompia a arvore do Navigator
-      // ('_dependents.isEmpty' is not true). Um frame de folga resolve.
-      await Future.delayed(Duration.zero);
+      // Espera o frame em que o dialogo do PIN termina de ser removido da
+      // arvore antes de abrir o proximo. Future.delayed(Duration.zero) so
+      // cede o event loop e podia cair no meio do mesmo frame de teardown;
+      // endOfFrame garante que o desmonte terminou.
+      await WidgetsBinding.instance.endOfFrame;
       if (!mounted) return;
       await _openSettingsDialog();
     }
@@ -378,10 +379,9 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
       );
 
       if (shouldUpdate == true && info.downloadUrl != null) {
-        // Mesmo cuidado do PIN/scanner: um frame de folga entre o pop deste
-        // dialogo e o showDialog do progresso evita corromper a arvore do
-        // Navigator ('_dependents.isEmpty' is not true).
-        await Future.delayed(Duration.zero);
+        // Mesmo cuidado do PIN: espera o dialogo anterior terminar de sair
+        // da arvore antes de abrir o de progresso.
+        await WidgetsBinding.instance.endOfFrame;
         if (!mounted) return;
         await _downloadAndInstallUpdate(info.downloadUrl!);
       }
