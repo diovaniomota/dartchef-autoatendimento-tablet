@@ -46,13 +46,13 @@ class HomeHighlightsWidget extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Destaques da Semana', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
-                      SizedBox(height: 2),
-                      Text('As melhores escolhas preparadas por nossos chefs', style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+                      Text('Destaques da Semana', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
+                      SizedBox(height: 3),
+                      Text('As melhores escolhas preparadas por nossos chefs', style: TextStyle(fontSize: 13, color: AppTheme.textMuted)),
                     ],
                   ),
                 ),
-                const Text('Ver tudo >', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.accent)),
+                const Text('Ver tudo >', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.accent)),
               ],
             ),
           );
@@ -101,7 +101,7 @@ class _HeroCarouselState extends State<_HeroCarousel> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 250,
+      height: 264,
       child: Stack(
         children: [
           PageView.builder(
@@ -183,16 +183,16 @@ class _HeroSlide extends StatelessWidget {
                   children: [
                     // Badge
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(color: AppTheme.badgeYellow, borderRadius: BorderRadius.circular(20)),
-                      child: const Text('O MAIS PEDIDO', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.black, letterSpacing: 0.5)),
+                      child: const Text('O MAIS PEDIDO', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.black, letterSpacing: 0.5)),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       product.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white, height: 1.1),
+                      style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white, height: 1.1),
                     ),
                     if (product.brand.isNotEmpty) ...[
                       const SizedBox(height: 4),
@@ -200,7 +200,7 @@ class _HeroSlide extends StatelessWidget {
                         product.brand,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.65)),
+                        style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.75)),
                       ),
                     ],
                     const SizedBox(height: 10),
@@ -209,10 +209,10 @@ class _HeroSlide extends StatelessWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('A partir de', style: TextStyle(fontSize: 10, color: Colors.white.withValues(alpha: 0.6))),
+                            Text('A partir de', style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7))),
                             Text(
                               _fmt(product.price),
-                              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
+                              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white),
                             ),
                           ],
                         ),
@@ -220,14 +220,14 @@ class _HeroSlide extends StatelessWidget {
                         GestureDetector(
                           onTap: onAdd,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                             decoration: BoxDecoration(color: AppTheme.accent, borderRadius: BorderRadius.circular(8)),
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.add_shopping_cart_rounded, size: 14, color: Colors.white),
+                                Icon(Icons.add_shopping_cart_rounded, size: 16, color: Colors.white),
                                 SizedBox(width: 6),
-                                Text('ADICIONAR', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.4)),
+                                Text('ADICIONAR', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.4)),
                               ],
                             ),
                           ),

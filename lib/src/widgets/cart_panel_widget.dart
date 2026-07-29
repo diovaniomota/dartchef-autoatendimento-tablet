@@ -53,8 +53,8 @@ class CartPanelWidget extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('SUGESTÕES DO CHEF', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.textMuted, letterSpacing: 0.8)),
-                      Icon(Icons.auto_awesome_rounded, size: 16, color: AppTheme.badgeYellow),
+                      const Text('SUGESTÕES DO CHEF', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppTheme.textMuted, letterSpacing: 0.6)),
+                      Icon(Icons.auto_awesome_rounded, size: 18, color: AppTheme.badgeYellow),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -72,8 +72,8 @@ class CartPanelWidget extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('RESUMO DO PEDIDO', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: AppTheme.textMuted, letterSpacing: 0.8)),
-                      const Icon(Icons.receipt_long_rounded, size: 16, color: AppTheme.textMuted),
+                      const Text('RESUMO DO PEDIDO', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppTheme.textMuted, letterSpacing: 0.6)),
+                      const Icon(Icons.receipt_long_rounded, size: 18, color: AppTheme.textMuted),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -102,18 +102,18 @@ class CartPanelWidget extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('TOTAL', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
-                      Text(currency.format(cartTotal * 1.1), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: AppTheme.accent)),
+                      const Text('TOTAL', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
+                      Text(currency.format(cartTotal * 1.1), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppTheme.accent)),
                     ],
                   ),
                   const SizedBox(height: 16),
                   SizedBox(
                     width: double.infinity,
-                    height: 48,
+                    height: 52,
                     child: ElevatedButton.icon(
                       onPressed: sendingOrder ? null : onSubmitOrder,
-                      icon: Icon(sendingOrder ? Icons.hourglass_top_rounded : Icons.check_circle_rounded, size: 18),
-                      label: Text(sendingOrder ? 'ENVIANDO...' : 'CONFIRMAR PEDIDO', style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                      icon: Icon(sendingOrder ? Icons.hourglass_top_rounded : Icons.check_circle_rounded, size: 20),
+                      label: Text(sendingOrder ? 'ENVIANDO...' : 'CONFIRMAR PEDIDO', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.accent,
                         foregroundColor: Colors.white,
@@ -163,9 +163,9 @@ class _SuggestionItem extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(product.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+                  Text(product.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
                   const SizedBox(height: 2),
-                  Text(currency.format(product.price), style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppTheme.accent)),
+                  Text(currency.format(product.price), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppTheme.accent)),
                 ],
               ),
             ),
@@ -195,17 +195,17 @@ class _CartItemRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.product.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+                Text(item.product.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
                 const SizedBox(height: 2),
-                Text('${item.quantity}x Unidade', style: const TextStyle(fontSize: 10, color: AppTheme.textMuted)),
+                Text('${item.quantity}x Unidade', style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
               ],
             ),
           ),
-          Text(currency.format(item.subtotal), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+          Text(currency.format(item.subtotal), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
           const SizedBox(width: 6),
           GestureDetector(
             onTap: onRemove,
-            child: Text('Remover', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.accent)),
+            child: Text('Remover', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.accent)),
           ),
         ],
       ),
@@ -224,8 +224,8 @@ class _SummaryRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
-        Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+        Text(label, style: const TextStyle(fontSize: 14, color: AppTheme.textMuted)),
+        Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white)),
       ],
     );
   }

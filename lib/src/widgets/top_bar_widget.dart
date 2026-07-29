@@ -26,7 +26,7 @@ class TopBarWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 56,
+      height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: const BoxDecoration(
         color: Color(0xFF111111),
@@ -37,7 +37,7 @@ class TopBarWidget extends StatelessWidget {
           // Campo de busca
           Expanded(
             child: Container(
-              height: 38,
+              height: 44,
               decoration: BoxDecoration(
                 color: AppTheme.surface,
                 borderRadius: BorderRadius.circular(10),
@@ -47,15 +47,15 @@ class TopBarWidget extends StatelessWidget {
                 children: [
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 12),
-                    child: Icon(Icons.search_rounded, size: 18, color: AppTheme.textMuted),
+                    child: Icon(Icons.search_rounded, size: 20, color: AppTheme.textMuted),
                   ),
                   Expanded(
                     child: TextField(
                       onChanged: onSearchChanged,
-                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      style: const TextStyle(color: Colors.white, fontSize: 15),
                       decoration: const InputDecoration(
                         hintText: 'O que você deseja comer hoje?',
-                        hintStyle: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                        hintStyle: TextStyle(color: AppTheme.textMuted, fontSize: 14),
                         border: InputBorder.none,
                         enabledBorder: InputBorder.none,
                         focusedBorder: InputBorder.none,
@@ -74,7 +74,7 @@ class TopBarWidget extends StatelessWidget {
 
           // MESA badge
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
               color: AppTheme.surface,
               borderRadius: BorderRadius.circular(8),
@@ -83,11 +83,11 @@ class TopBarWidget extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.table_restaurant_rounded, size: 14, color: AppTheme.textMuted),
+                const Icon(Icons.table_restaurant_rounded, size: 16, color: AppTheme.textMuted),
                 const SizedBox(width: 6),
                 Text(
                   'MESA $tableCode',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.3),
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.3),
                 ),
               ],
             ),
@@ -111,7 +111,7 @@ class TopBarWidget extends StatelessWidget {
           GestureDetector(
             onTap: onCartTap,
             child: Container(
-              height: 38,
+              height: 44,
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
                 color: cartItemCount > 0 ? AppTheme.accent : AppTheme.surface,
@@ -121,12 +121,12 @@ class TopBarWidget extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.shopping_cart_rounded, size: 16, color: cartItemCount > 0 ? Colors.white : AppTheme.textMuted),
+                  Icon(Icons.shopping_cart_rounded, size: 18, color: cartItemCount > 0 ? Colors.white : AppTheme.textMuted),
                   const SizedBox(width: 7),
                   Text(
                     cartItemCount > 0 ? 'MEU PEDIDO ($cartItemCount)' : 'MEU PEDIDO',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: 13,
                       fontWeight: FontWeight.w800,
                       color: cartItemCount > 0 ? Colors.white : AppTheme.textMuted,
                       letterSpacing: 0.3,
@@ -155,8 +155,8 @@ class _TopButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(8),
       onTap: onTap,
       child: Container(
-        height: 38,
-        padding: EdgeInsets.symmetric(horizontal: iconOnly ? 10 : 12),
+        height: 44,
+        padding: EdgeInsets.symmetric(horizontal: iconOnly ? 12 : 14),
         decoration: BoxDecoration(
           color: AppTheme.surface,
           borderRadius: BorderRadius.circular(8),
@@ -165,10 +165,10 @@ class _TopButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 15, color: AppTheme.textMuted),
+            Icon(icon, size: 17, color: AppTheme.textMuted),
             if (!iconOnly && label.isNotEmpty) ...[
-              const SizedBox(width: 5),
-              Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted, letterSpacing: 0.3)),
+              const SizedBox(width: 6),
+              Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textMuted, letterSpacing: 0.3)),
             ],
           ],
         ),

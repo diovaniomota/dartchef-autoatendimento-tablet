@@ -8,7 +8,10 @@ class AppTheme {
   static const Color accentDark  = Color(0xFFE55525);
   static const Color textPrimary = Color(0xFFFFFFFF);
   static const Color textSecondary = Color(0xFFCCCCCC);
-  static const Color textMuted   = Color(0xFF888888);
+  // Mais claro que o padrao original (0xFF888888) - em telas de qualidade
+  // ruim (baixo brilho/contraste, tipico de tablet de entrada) o cinza
+  // escuro ficava quase ilegivel sobre o fundo escuro do app.
+  static const Color textMuted   = Color(0xFFA8A8A8);
   static const Color success     = Color(0xFF22C55E);
   static const Color danger      = Color(0xFFEF4444);
   static const Color border      = Color(0xFF333333);

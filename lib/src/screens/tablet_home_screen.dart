@@ -273,18 +273,18 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
                       Text(
                         org,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white, height: 1.2),
+                        style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white, height: 1.2),
                       ),
                       const SizedBox(height: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           'Mesa $mesa',
-                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
                         ),
                       ),
                     ],
@@ -333,20 +333,20 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
                           borderRadius: BorderRadius.circular(6),
                           border: Border.all(color: AppTheme.accent.withValues(alpha: 0.3)),
                         ),
-                        child: const Text('DartSoft', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppTheme.accent, letterSpacing: 0.5)),
+                        child: const Text('DartSoft', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppTheme.accent, letterSpacing: 0.5)),
                       ),
                       const SizedBox(width: 8),
-                      const Text('Sistema de pedidos para mesas', style: TextStyle(fontSize: 10, color: Color(0xFF555555))),
+                      const Text('Sistema de pedidos para mesas', style: TextStyle(fontSize: 12, color: Color(0xFF888888))),
                       const Spacer(),
                       GestureDetector(
                         onTap: () => Navigator.of(ctx).pop(),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                           decoration: BoxDecoration(
                             color: AppTheme.accent,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: const Text('Fechar', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white)),
+                          child: const Text('Fechar', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white)),
                         ),
                       ),
                     ],
@@ -542,12 +542,12 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.cloud_off_rounded, size: 52, color: Color(0xFF555555)),
+              const Icon(Icons.cloud_off_rounded, size: 52, color: Color(0xFF888888)),
               const SizedBox(height: 14),
               const Text('Não foi possível carregar o cardápio',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
               const SizedBox(height: 6),
-              Text(_errorMessage, textAlign: TextAlign.center, style: const TextStyle(color: Color(0xFF888888))),
+              Text(_errorMessage, textAlign: TextAlign.center, style: const TextStyle(fontSize: 15, color: Color(0xFFAAAAAA))),
               const SizedBox(height: 20),
               FilledButton.icon(
                 onPressed: _loadMenu,
@@ -568,13 +568,13 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.tablet_android_rounded, size: 52, color: Color(0xFF555555)),
+              const Icon(Icons.tablet_android_rounded, size: 52, color: Color(0xFF888888)),
               const SizedBox(height: 14),
               const Text('Configure este tablet',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Colors.white)),
+                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
               const SizedBox(height: 6),
               const Text('Pressione e segure o logo para configurar.',
-                  textAlign: TextAlign.center, style: TextStyle(color: Color(0xFF888888))),
+                  textAlign: TextAlign.center, style: TextStyle(fontSize: 15, color: Color(0xFFAAAAAA))),
               const SizedBox(height: 20),
               FilledButton.icon(
                 onPressed: _openSettingsDialog,
@@ -597,7 +597,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
             const LinearProgressIndicator(minHeight: 2, color: AppTheme.accent, backgroundColor: AppTheme.surface),
           Expanded(
             child: products.isEmpty
-                ? const Center(child: Text('Nenhum produto disponível.', style: TextStyle(color: AppTheme.textMuted)))
+                ? const Center(child: Text('Nenhum produto disponível.', style: TextStyle(fontSize: 15, color: AppTheme.textMuted)))
                 : HomeHighlightsWidget(products: products, currency: _currency, onAdd: _addToCart, organizationName: ''),
           ),
         ],
@@ -615,7 +615,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
             child: products.isEmpty
                 ? Center(child: Text(
                     _searchTerm.isNotEmpty ? 'Nenhum produto encontrado.' : 'Nenhum produto nesta categoria.',
-                    style: const TextStyle(color: Color(0xFF666666), fontSize: 15)))
+                    style: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 16)))
                 : ListView.builder(
                     padding: EdgeInsets.zero,
                     itemCount: products.length + 2, // +2: banner + section header
@@ -633,13 +633,13 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(_activeCategory, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                                        Text(_activeCategory, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
                                         const SizedBox(height: 2),
-                                        Text(_categorySubtitle(_activeCategory), style: const TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+                                        Text(_categorySubtitle(_activeCategory), style: const TextStyle(fontSize: 13, color: AppTheme.textMuted)),
                                       ],
                                     ),
                                   ),
-                                  const Text('Ver tudo >', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.accent)),
+                                  const Text('Ver tudo >', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.accent)),
                                 ],
                               ),
                             ),
@@ -737,22 +737,22 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
               children: [
                 // Badge
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(color: AppTheme.accent, borderRadius: BorderRadius.circular(20)),
                   child: Text(
                     '${products.length} ${products.length == 1 ? 'ITEM' : 'ITENS'}',
-                    style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5),
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   _activeCategory,
-                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white, height: 1.1),
+                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white, height: 1.1),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   _categorySubtitle(_activeCategory),
-                  style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.65)),
+                  style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.75)),
                 ),
               ],
             ),
@@ -928,7 +928,7 @@ class _OrderHistoryDialogState extends State<_OrderHistoryDialog> {
                   const SizedBox(width: 12),
                   Text(
                     'Meus Pedidos — Mesa ${widget.settings.tableCode}',
-                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white),
+                    style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700, color: Colors.white),
                   ),
                   const Spacer(),
                   IconButton(onPressed: () => Navigator.of(context).pop(), icon: const Icon(Icons.close, color: Color(0xFF888888))),
@@ -947,9 +947,9 @@ class _OrderHistoryDialogState extends State<_OrderHistoryDialog> {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(Icons.receipt_outlined, size: 44, color: Color(0xFF444444)),
+                                  Icon(Icons.receipt_outlined, size: 44, color: Color(0xFF666666)),
                                   SizedBox(height: 12),
-                                  Text('Nenhum pedido nesta mesa ainda.', style: TextStyle(color: Color(0xFF666666), fontSize: 15)),
+                                  Text('Nenhum pedido nesta mesa ainda.', style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 16)),
                                 ],
                               ),
                             )
@@ -980,23 +980,23 @@ class _OrderHistoryDialogState extends State<_OrderHistoryDialog> {
                                     children: [
                                       Row(
                                         children: [
-                                          Text('Pedido #${order['id']}', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 14)),
+                                          Text('Pedido #${order['id']}', style: const TextStyle(fontWeight: FontWeight.w700, color: Colors.white, fontSize: 16)),
                                           const Spacer(),
                                           Container(
-                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                                             decoration: BoxDecoration(
                                               color: _statusColor(status).withValues(alpha: 0.15),
                                               borderRadius: BorderRadius.circular(20),
                                               border: Border.all(color: _statusColor(status).withValues(alpha: 0.3)),
                                             ),
-                                            child: Text(_statusLabel(status), style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _statusColor(status))),
+                                            child: Text(_statusLabel(status), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _statusColor(status))),
                                           ),
                                         ],
                                       ),
                                       if (dtStr.isNotEmpty)
                                         Padding(
                                           padding: const EdgeInsets.only(top: 4),
-                                          child: Text(dtStr, style: const TextStyle(fontSize: 11, color: Color(0xFF666666))),
+                                          child: Text(dtStr, style: const TextStyle(fontSize: 13, color: Color(0xFF999999))),
                                         ),
                                       const SizedBox(height: 10),
                                       ...items.map((item) {
@@ -1005,11 +1005,11 @@ class _OrderHistoryDialogState extends State<_OrderHistoryDialog> {
                                           padding: const EdgeInsets.only(bottom: 4),
                                           child: Row(
                                             children: [
-                                              Text('${i['quantity']}x', style: const TextStyle(fontSize: 12, color: Color(0xFF888888), fontWeight: FontWeight.w600)),
+                                              Text('${i['quantity']}x', style: const TextStyle(fontSize: 14, color: Color(0xFFAAAAAA), fontWeight: FontWeight.w600)),
                                               const SizedBox(width: 8),
-                                              Expanded(child: Text(i['product_name'] as String? ?? '', style: const TextStyle(fontSize: 12, color: Color(0xFFCCCCCC)))),
+                                              Expanded(child: Text(i['product_name'] as String? ?? '', style: const TextStyle(fontSize: 14, color: Color(0xFFCCCCCC)))),
                                               Text(widget.currency.format(double.tryParse('${i['subtotal'] ?? 0}') ?? 0),
-                                                  style: const TextStyle(fontSize: 12, color: Color(0xFF888888))),
+                                                  style: const TextStyle(fontSize: 14, color: Color(0xFFAAAAAA))),
                                             ],
                                           ),
                                         );
@@ -1018,9 +1018,9 @@ class _OrderHistoryDialogState extends State<_OrderHistoryDialog> {
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.end,
                                         children: [
-                                          const Text('Total: ', style: TextStyle(fontSize: 13, color: Color(0xFF888888))),
+                                          const Text('Total: ', style: TextStyle(fontSize: 15, color: Color(0xFFAAAAAA))),
                                           Text(widget.currency.format(total),
-                                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Colors.white)),
+                                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
                                         ],
                                       ),
                                     ],
@@ -1056,7 +1056,7 @@ class _SubCategoryPill extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 12,
+          fontSize: 14,
           fontWeight: FontWeight.w600,
           color: isActive ? Colors.white : AppTheme.textMuted,
         ),
@@ -1094,9 +1094,9 @@ class _AboutFeature extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+                Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
                 const SizedBox(height: 2),
-                Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF777777), height: 1.4)),
+                Text(subtitle, style: const TextStyle(fontSize: 13, color: Color(0xFF999999), height: 1.4)),
               ],
             ),
           ),

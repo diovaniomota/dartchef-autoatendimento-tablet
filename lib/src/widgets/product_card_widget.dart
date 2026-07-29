@@ -53,12 +53,12 @@ class ProductCardWidget extends StatelessWidget {
                       top: 6,
                       left: 6,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                         decoration: BoxDecoration(
                           color: AppTheme.accent,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text('Destaque', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.3)),
+                        child: const Text('Destaque', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.3)),
                       ),
                     ),
                 ],
@@ -76,7 +76,7 @@ class ProductCardWidget extends StatelessWidget {
                       product.name,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white, height: 1.3),
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white, height: 1.3),
                     ),
                     if (product.brand.isNotEmpty) ...[
                       const SizedBox(height: 5),
@@ -84,14 +84,14 @@ class ProductCardWidget extends StatelessWidget {
                         product.brand,
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontSize: 11, color: AppTheme.textMuted, height: 1.5),
+                        style: const TextStyle(fontSize: 13, color: AppTheme.textMuted, height: 1.5),
                       ),
                     ],
                     const SizedBox(height: 8),
-                    Text('Preço unitário', style: const TextStyle(fontSize: 10, color: AppTheme.textMuted)),
+                    Text('Preço unitário', style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
                     Text(
                       currency.format(product.price),
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppTheme.accent),
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.accent),
                     ),
                   ],
                 ),
@@ -147,7 +147,7 @@ class _AddButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
         decoration: BoxDecoration(
           color: AppTheme.accent,
           borderRadius: BorderRadius.circular(20),
@@ -155,9 +155,9 @@ class _AddButton extends StatelessWidget {
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.add_rounded, size: 14, color: Colors.white),
-            SizedBox(width: 4),
-            Text('Adicionar', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+            Icon(Icons.add_rounded, size: 16, color: Colors.white),
+            SizedBox(width: 5),
+            Text('Adicionar', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
           ],
         ),
       ),

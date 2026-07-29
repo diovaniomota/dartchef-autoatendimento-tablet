@@ -16,7 +16,7 @@ class CategoryPanelWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 170,
+      width: 186,
       decoration: const BoxDecoration(
         color: Color(0xFF0D0D0D),
         border: Border(
@@ -36,7 +36,7 @@ class CategoryPanelWidget extends StatelessWidget {
             ),
             child: const Text(
               'CATEGORIAS',
-              style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1.2, color: Color(0xFF444444)),
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, letterSpacing: 1.0, color: Color(0xFF777777)),
             ),
           ),
 
@@ -96,9 +96,9 @@ class _CategoryItem extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
-                  color: isActive ? Colors.white : const Color(0xFF999999),
+                  fontSize: 14,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  color: isActive ? Colors.white : const Color(0xFFAAAAAA),
                   height: 1.3,
                 ),
               ),

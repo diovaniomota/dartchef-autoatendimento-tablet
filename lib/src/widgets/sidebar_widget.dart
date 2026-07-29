@@ -21,7 +21,7 @@ class SidebarWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 80,
+      width: 92,
       color: const Color(0xFF111111),
       child: Column(
         children: [
@@ -30,8 +30,8 @@ class SidebarWidget extends StatelessWidget {
             onLongPress: onSettingsTap,
             child: Container(
               margin: const EdgeInsets.fromLTRB(0, 16, 0, 12),
-              width: 54,
-              height: 54,
+              width: 56,
+              height: 56,
               decoration: BoxDecoration(
                 color: AppTheme.accent,
                 borderRadius: BorderRadius.circular(16),
@@ -40,7 +40,7 @@ class SidebarWidget extends StatelessWidget {
                 ],
               ),
               alignment: Alignment.center,
-              child: const Icon(Icons.restaurant_menu_rounded, size: 28, color: Colors.white),
+              child: const Icon(Icons.restaurant_menu_rounded, size: 30, color: Colors.white),
             ),
           ),
 
@@ -126,7 +126,7 @@ class _SidebarItem extends StatelessWidget {
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 12),
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
         decoration: BoxDecoration(
           color: isActive ? AppTheme.accent.withValues(alpha: 0.15) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
@@ -134,18 +134,18 @@ class _SidebarItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 22, color: isActive ? AppTheme.accent : const Color(0xFF666666)),
-            const SizedBox(height: 4),
+            Icon(icon, size: 24, color: isActive ? AppTheme.accent : const Color(0xFF888888)),
+            const SizedBox(height: 5),
             Text(
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 8,
+                fontSize: 11,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
-                color: isActive ? AppTheme.accent : const Color(0xFF666666),
+                letterSpacing: 0.2,
+                color: isActive ? AppTheme.accent : const Color(0xFF888888),
               ),
             ),
           ],
