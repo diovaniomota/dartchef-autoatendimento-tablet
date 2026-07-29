@@ -95,12 +95,12 @@ class TopBarWidget extends StatelessWidget {
 
           const SizedBox(width: 8),
 
-          // GARÇOM
-          _TopButton(icon: Icons.support_agent_rounded, label: 'GARÇOM', onTap: onCallWaiter),
+          // GARÇOM (so icone - texto nao cabe em tablets de tela estreita)
+          _TopButton(icon: Icons.support_agent_rounded, label: 'Garçom', onTap: onCallWaiter, iconOnly: true),
           const SizedBox(width: 8),
 
-          // MINHA CONTA
-          _TopButton(icon: Icons.receipt_long_rounded, label: 'MINHA CONTA', onTap: onMyAccount),
+          // MINHA CONTA (so icone - texto nao cabe em tablets de tela estreita)
+          _TopButton(icon: Icons.receipt_long_rounded, label: 'Minha conta', onTap: onMyAccount, iconOnly: true),
           const SizedBox(width: 8),
 
           // ATUALIZAR
@@ -151,7 +151,7 @@ class _TopButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    final button = InkWell(
       borderRadius: BorderRadius.circular(8),
       onTap: onTap,
       child: Container(
@@ -165,7 +165,7 @@ class _TopButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 17, color: AppTheme.textMuted),
+            Icon(icon, size: 20, color: AppTheme.textMuted),
             if (!iconOnly && label.isNotEmpty) ...[
               const SizedBox(width: 6),
               Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textMuted, letterSpacing: 0.3)),
@@ -174,5 +174,12 @@ class _TopButton extends StatelessWidget {
         ),
       ),
     );
+
+    // Botao so-icone: mantem o rotulo acessivel via toque longo, ja que o
+    // texto foi removido pra caber em tablets de tela estreita.
+    if (iconOnly && label.isNotEmpty) {
+      return Tooltip(message: label, child: button);
+    }
+    return button;
   }
 }
