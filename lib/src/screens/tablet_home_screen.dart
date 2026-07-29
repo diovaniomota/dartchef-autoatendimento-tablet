@@ -219,6 +219,12 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
     controller.dispose();
 
     if (ok == true) {
+      if (!mounted) return;
+      // Mesmo bug do scanner/pareamento: abrir outro showDialog logo depois
+      // do pop do PIN, no mesmo frame, corrompia a arvore do Navigator
+      // ('_dependents.isEmpty' is not true). Um frame de folga resolve.
+      await Future.delayed(Duration.zero);
+      if (!mounted) return;
       await _openSettingsDialog();
     }
   }
@@ -372,6 +378,11 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
       );
 
       if (shouldUpdate == true && info.downloadUrl != null) {
+        // Mesmo cuidado do PIN/scanner: um frame de folga entre o pop deste
+        // dialogo e o showDialog do progresso evita corromper a arvore do
+        // Navigator ('_dependents.isEmpty' is not true).
+        await Future.delayed(Duration.zero);
+        if (!mounted) return;
         await _downloadAndInstallUpdate(info.downloadUrl!);
       }
     } on UpdateException catch (e) {
