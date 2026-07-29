@@ -9,6 +9,7 @@ import '../models/cart_item.dart';
 import '../models/menu_product.dart';
 import '../models/table_menu.dart';
 import '../models/tablet_settings.dart';
+import '../services/kiosk_service.dart';
 import '../services/local_settings_service.dart';
 import '../services/tablet_api_service.dart';
 import '../services/update_service.dart';
@@ -31,6 +32,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
   final LocalSettingsService _settingsService = LocalSettingsService();
   final TabletApiService _apiService = TabletApiService();
   final UpdateService _updateService = UpdateService();
+  final KioskService _kioskService = KioskService();
   final TextEditingController _customerNameController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
   final NumberFormat _currency = NumberFormat.currency(locale: 'pt_BR', symbol: r'R$');
@@ -51,6 +53,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _kioskService.enterKiosk();
     _bootstrap();
   }
 
@@ -286,25 +289,40 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
             ],
           ),
         ),
+        actionsAlignment: MainAxisAlignment.spaceBetween,
         actions: [
-          TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancelar')),
-          FilledButton(
+          TextButton(
             onPressed: () async {
-              final next = TabletSettings(
-                apiBaseUrl: apiCtrl.text.trim(),
-                organizationId: orgCtrl.text.trim(),
-                tableCode: tableCtrl.text.trim(),
-              );
-              if (!next.isComplete) {
-                _showMsg('Preencha API, organização e mesa.', isError: true);
-                return;
-              }
-              final nav = Navigator.of(ctx);
-              await _applySettings(next);
-              if (!mounted) return;
-              nav.pop();
+              Navigator.of(ctx).pop();
+              await _kioskService.exitKiosk();
+              SystemNavigator.pop();
             },
-            child: const Text('Salvar'),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFFEF4444)),
+            child: const Text('Sair do app'),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextButton(onPressed: () => Navigator.of(ctx).pop(), child: const Text('Cancelar')),
+              FilledButton(
+                onPressed: () async {
+                  final next = TabletSettings(
+                    apiBaseUrl: apiCtrl.text.trim(),
+                    organizationId: orgCtrl.text.trim(),
+                    tableCode: tableCtrl.text.trim(),
+                  );
+                  if (!next.isComplete) {
+                    _showMsg('Preencha API, organização e mesa.', isError: true);
+                    return;
+                  }
+                  final nav = Navigator.of(ctx);
+                  await _applySettings(next);
+                  if (!mounted) return;
+                  nav.pop();
+                },
+                child: const Text('Salvar'),
+              ),
+            ],
           ),
         ],
       ),
