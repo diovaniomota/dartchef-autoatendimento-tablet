@@ -11,11 +11,17 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "br.com.dartsoft.dartchef/kiosk"
 
+    // Quando o Flutter pede pra sair do quiosque (instalar atualizacao, ou
+    // "Sair do app"), o onResume NAO pode re-fixar a tela - senao o Android
+    // joga o instalador pra tras assim que ele abre.
+    private var kioskEnabled = true
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "enterKiosk" -> {
+                    kioskEnabled = true
                     try {
                         startLockTask()
                         result.success(true)
@@ -24,6 +30,7 @@ class MainActivity : FlutterActivity() {
                     }
                 }
                 "exitKiosk" -> {
+                    kioskEnabled = false
                     try {
                         stopLockTask()
                         result.success(true)
@@ -38,6 +45,7 @@ class MainActivity : FlutterActivity() {
 
     override fun onResume() {
         super.onResume()
+        if (!kioskEnabled) return
         try {
             startLockTask()
         } catch (e: Exception) {

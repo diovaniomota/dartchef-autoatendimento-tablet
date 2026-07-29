@@ -89,7 +89,16 @@ class UpdateService {
 
   // Baixa o APK em streaming (arquivo pode ter ~200MB, nao da pra bufferizar
   // tudo na memoria de um tablet de entrada) e abre o instalador do sistema.
-  Future<void> downloadAndInstall(String downloadUrl, {void Function(double progress)? onProgress}) async {
+  //
+  // beforeOpenInstaller roda depois do download e ANTES de abrir o
+  // instalador: e' onde o app sai do modo quiosque. Com o Screen Pinning
+  // ativo o Android bloqueia outras telas de virem pra frente, entao o
+  // instalador nao apareceria.
+  Future<void> downloadAndInstall(
+    String downloadUrl, {
+    void Function(double progress)? onProgress,
+    Future<void> Function()? beforeOpenInstaller,
+  }) async {
     final client = http.Client();
     try {
       final response = await client.send(http.Request('GET', Uri.parse(downloadUrl)));
@@ -113,6 +122,10 @@ class UpdateService {
         }
       } finally {
         await sink.close();
+      }
+
+      if (beforeOpenInstaller != null) {
+        await beforeOpenInstaller();
       }
 
       final result = await OpenFilex.open(file.path);

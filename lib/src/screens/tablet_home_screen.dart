@@ -417,10 +417,26 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
     );
 
     try {
-      await _updateService.downloadAndInstall(downloadUrl, onProgress: (p) => progress.value = p);
+      await _updateService.downloadAndInstall(
+        downloadUrl,
+        onProgress: (p) => progress.value = p,
+        // Sai do modo quiosque antes de abrir o instalador: com o Screen
+        // Pinning ativo o Android impede o instalador de vir pra frente.
+        beforeOpenInstaller: () => _kioskService.exitKiosk(),
+      );
+
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
+
+      // Fecha o app pra liberar a instalacao. Sem isso o instalador abre mas
+      // o app continua aberto por tras, e o Android nao substitui o pacote
+      // enquanto ele estiver rodando. O delay dá tempo do instalador
+      // aparecer antes da nossa Activity ser finalizada.
+      await Future.delayed(const Duration(seconds: 2));
+      await SystemNavigator.pop();
     } catch (e) {
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
+      // Falhou: volta pro modo quiosque, senao o tablet fica destravado.
+      await _kioskService.enterKiosk();
       if (mounted) {
         _showMsg(e is UpdateException ? e.message : 'Falha ao baixar/instalar a atualização.', isError: true);
       }
