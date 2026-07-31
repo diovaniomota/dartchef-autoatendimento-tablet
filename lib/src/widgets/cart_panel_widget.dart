@@ -188,24 +188,60 @@ class _CartItemRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(item.product.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
-                const SizedBox(height: 2),
-                Text('${item.quantity}x Unidade', style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
-              ],
-            ),
+          Text(
+            item.product.name,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white),
           ),
-          Text(currency.format(item.subtotal), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
-          const SizedBox(width: 6),
-          GestureDetector(
-            onTap: onRemove,
-            child: Text('Remover', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.accent)),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Text('${item.quantity}x', style: const TextStyle(fontSize: 13, color: AppTheme.textMuted)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  currency.format(item.subtotal),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+                ),
+              ),
+              const SizedBox(width: 4),
+              // Antes era um GestureDetector direto no Text('Remover') em
+              // fonte 12: a area sensivel ao toque era o retangulo das letras
+              // (~52x14), bem abaixo dos 48x48 que o Android recomenda, e sem
+              // nenhum retorno visual. Num tablet de digitalizador simples o
+              // toque errava quase sempre e o cliente achava que travou.
+              // Material + InkWell dao a area minima E o efeito de toque.
+              Material(
+                color: AppTheme.surfaceHigh,
+                borderRadius: BorderRadius.circular(10),
+                child: InkWell(
+                  onTap: onRemove,
+                  borderRadius: BorderRadius.circular(10),
+                  splashColor: AppTheme.accent.withValues(alpha: 0.28),
+                  highlightColor: AppTheme.accent.withValues(alpha: 0.14),
+                  child: Container(
+                    constraints: const BoxConstraints(minHeight: 48, minWidth: 48),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    alignment: Alignment.center,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.delete_outline_rounded, size: 17, color: AppTheme.accent),
+                        SizedBox(width: 5),
+                        Text('Remover', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.accent)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
