@@ -703,7 +703,6 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
         cart: _cart,
         tableCode: _settings?.tableCode ?? '--',
         onConfirm: _submitOrder,
-        sending: _sendingOrder,
       ),
     ));
   }

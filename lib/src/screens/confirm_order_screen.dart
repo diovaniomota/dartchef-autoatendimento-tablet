@@ -11,19 +11,35 @@ import '../models/cart_item.dart';
 /// existe mais leitura de QR Code aqui — antes o codigo escaneado substituia
 /// a mesa configurada, o que so fazia sentido no cenario de comanda por
 /// pessoa, que nao e como o salao opera.
-class ConfirmOrderScreen extends StatelessWidget {
+class ConfirmOrderScreen extends StatefulWidget {
   const ConfirmOrderScreen({
     super.key,
     required this.cart,
     required this.tableCode,
     required this.onConfirm,
-    required this.sending,
   });
 
   final List<CartItem> cart;
   final String tableCode;
   final VoidCallback onConfirm;
-  final bool sending;
+
+  @override
+  State<ConfirmOrderScreen> createState() => _ConfirmOrderScreenState();
+}
+
+class _ConfirmOrderScreenState extends State<ConfirmOrderScreen> {
+  // Trava local de reenvio.
+  //
+  // Antes a tela era StatelessWidget e recebia um "sending" vindo do pai, mas
+  // como ela e empurrada com Navigator.push esse valor era uma FOTOGRAFIA do
+  // momento da abertura e nunca era atualizado — ou seja, a guarda nunca
+  // bloqueava nada. Com DOIS botoes de confirmar (barra superior e rodape),
+  // dois toques rapidos enviavam o pedido DUAS VEZES e davam dois pop(),
+  // removendo tambem a tela do cardapio da pilha.
+  bool _confirmed = false;
+
+  List<CartItem> get cart => widget.cart;
+  String get tableCode => widget.tableCode;
 
   double get _subtotal => cart.fold(0.0, (s, i) => s + i.subtotal);
   double get _serviceTax => _subtotal * 0.1;
@@ -33,12 +49,13 @@ class ConfirmOrderScreen extends StatelessWidget {
   static final _currency = NumberFormat.currency(locale: 'pt_BR', symbol: r'R$');
 
   void _confirm(BuildContext context) {
-    if (sending) return;
+    if (_confirmed) return;
+    setState(() => _confirmed = true);
 
-    // Fecha a tela de confirmacao ANTES de disparar o envio, igual ao fluxo
-    // anterior: quem mostra o retorno ("Pedido enviado") e a tela do cardapio.
+    // Fecha a tela de confirmacao ANTES de disparar o envio: quem mostra o
+    // retorno ("Pedido enviado") e a tela do cardapio.
     Navigator.of(context).pop();
-    onConfirm();
+    widget.onConfirm();
   }
 
   @override
@@ -85,23 +102,23 @@ class ConfirmOrderScreen extends StatelessWidget {
                   const SizedBox(width: 16),
                   // Botao de confirmar (barra superior)
                   GestureDetector(
-                    onTap: sending ? null : () => _confirm(context),
+                    onTap: _confirmed ? null : () => _confirm(context),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       decoration: BoxDecoration(
-                        color: sending ? AppTheme.accent.withValues(alpha: 0.5) : AppTheme.accent,
+                        color: _confirmed ? AppTheme.accent.withValues(alpha: 0.5) : AppTheme.accent,
                         borderRadius: BorderRadius.circular(14),
-                        boxShadow: sending
+                        boxShadow: _confirmed
                             ? null
                             : [BoxShadow(color: AppTheme.accent.withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 4))],
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(sending ? Icons.hourglass_top_rounded : Icons.check_circle_rounded, size: 16, color: Colors.white),
+                          Icon(_confirmed ? Icons.hourglass_top_rounded : Icons.check_circle_rounded, size: 16, color: Colors.white),
                           const SizedBox(width: 8),
                           Text(
-                            sending ? 'ENVIANDO...' : 'CONFIRMAR E ENVIAR',
+                            _confirmed ? 'ENVIANDO...' : 'CONFIRMAR E ENVIAR',
                             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5),
                           ),
                         ],
@@ -251,10 +268,10 @@ class ConfirmOrderScreen extends StatelessWidget {
                           width: double.infinity,
                           height: 52,
                           child: ElevatedButton.icon(
-                            onPressed: sending ? null : () => _confirm(context),
-                            icon: Icon(sending ? Icons.hourglass_top_rounded : Icons.check_circle_rounded, size: 18),
+                            onPressed: _confirmed ? null : () => _confirm(context),
+                            icon: Icon(_confirmed ? Icons.hourglass_top_rounded : Icons.check_circle_rounded, size: 18),
                             label: Text(
-                              sending ? 'ENVIANDO...' : 'CONFIRMAR E ENVIAR',
+                              _confirmed ? 'ENVIANDO...' : 'CONFIRMAR E ENVIAR',
                               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, letterSpacing: 0.5),
                             ),
                             style: ElevatedButton.styleFrom(
