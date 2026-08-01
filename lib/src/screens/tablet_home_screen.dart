@@ -698,6 +698,15 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
 
   void _openConfirmScreen() {
     if (_cart.isEmpty) { _showMsg('Adicione itens antes de enviar.', isError: true); return; }
+
+    // Dois toques no botao do carrinho empilhavam DUAS telas de confirmacao.
+    // Confirmando a de cima, ela fecha e a segunda reaparece com os mesmos
+    // itens (o carrinho so e limpo depois da resposta do servidor): parece que
+    // nao enviou, o cliente confirma de novo e a cozinha recebe o pedido em
+    // duplicidade. A trava dentro da tela de confirmacao nao cobre este caso,
+    // porque cada tela empilhada tem a sua propria.
+    if (ModalRoute.of(context)?.isCurrent != true) return;
+
     Navigator.of(context).push(MaterialPageRoute(
       builder: (_) => ConfirmOrderScreen(
         cart: _cart,
@@ -708,6 +717,11 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
   }
 
   Future<void> _submitOrder() async {
+    // Rede de seguranca final contra pedido duplicado: vale para TODOS os
+    // caminhos (duplo toque, telas empilhadas, dois botoes no mesmo frame).
+    // _sendingOrder e ligado de forma sincrona logo abaixo e desligado no
+    // finally, entao a guarda funciona mesmo com duas chamadas no mesmo frame.
+    if (_sendingOrder) return;
     if (_cart.isEmpty) { _showMsg('Adicione itens antes de enviar.', isError: true); return; }
     final settings = _settings;
     if (settings == null) { _showMsg('Configure o tablet antes.', isError: true); return; }
