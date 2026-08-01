@@ -3,20 +3,26 @@ import 'package:intl/intl.dart';
 
 import '../core/app_theme.dart';
 import '../models/cart_item.dart';
-import 'qr_scanner_screen.dart';
 
+/// Tela de confirmacao do pedido.
+///
+/// O tablet fica FIXO em uma mesa: a mesa vem da configuracao do aparelho
+/// (TabletSettings.tableCode) e nao muda de pedido para pedido. Por isso nao
+/// existe mais leitura de QR Code aqui — antes o codigo escaneado substituia
+/// a mesa configurada, o que so fazia sentido no cenario de comanda por
+/// pessoa, que nao e como o salao opera.
 class ConfirmOrderScreen extends StatelessWidget {
   const ConfirmOrderScreen({
     super.key,
     required this.cart,
     required this.tableCode,
-    required this.onConfirmWithComanda,
+    required this.onConfirm,
     required this.sending,
   });
 
   final List<CartItem> cart;
   final String tableCode;
-  final void Function(String comandaCode) onConfirmWithComanda;
+  final VoidCallback onConfirm;
   final bool sending;
 
   double get _subtotal => cart.fold(0.0, (s, i) => s + i.subtotal);
@@ -26,16 +32,13 @@ class ConfirmOrderScreen extends StatelessWidget {
 
   static final _currency = NumberFormat.currency(locale: 'pt_BR', symbol: r'R$');
 
-  void _scanAndConfirm(BuildContext context) async {
-    final scannedCode = await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
-    );
+  void _confirm(BuildContext context) {
+    if (sending) return;
 
-    if (scannedCode == null || scannedCode.isEmpty) return;
-    if (!context.mounted) return;
-
+    // Fecha a tela de confirmacao ANTES de disparar o envio, igual ao fluxo
+    // anterior: quem mostra o retorno ("Pedido enviado") e a tela do cardapio.
     Navigator.of(context).pop();
-    onConfirmWithComanda(scannedCode);
+    onConfirm();
   }
 
   @override
@@ -75,14 +78,14 @@ class ConfirmOrderScreen extends StatelessWidget {
                       children: [
                         Text('Confirme seu Pedido', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
                         SizedBox(height: 2),
-                        Text('Revise os itens e escaneie a comanda para enviar', style: TextStyle(fontSize: 13, color: AppTheme.textMuted)),
+                        Text('Revise os itens antes de enviar para a cozinha', style: TextStyle(fontSize: 13, color: AppTheme.textMuted)),
                       ],
                     ),
                   ),
                   const SizedBox(width: 16),
-                  // Scan QR button (top bar)
+                  // Botao de confirmar (barra superior)
                   GestureDetector(
-                    onTap: sending ? null : () => _scanAndConfirm(context),
+                    onTap: sending ? null : () => _confirm(context),
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                       decoration: BoxDecoration(
@@ -95,10 +98,10 @@ class ConfirmOrderScreen extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(sending ? Icons.hourglass_top_rounded : Icons.qr_code_scanner_rounded, size: 16, color: Colors.white),
+                          Icon(sending ? Icons.hourglass_top_rounded : Icons.check_circle_rounded, size: 16, color: Colors.white),
                           const SizedBox(width: 8),
                           Text(
-                            sending ? 'ENVIANDO...' : 'ESCANEAR COMANDA',
+                            sending ? 'ENVIANDO...' : 'CONFIRMAR E ENVIAR',
                             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5),
                           ),
                         ],
@@ -223,14 +226,18 @@ class ConfirmOrderScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(color: AppTheme.border),
                           ),
-                          child: const Row(
+                          // Mostra para QUAL mesa o pedido vai. Antes esta area
+                          // instruia a escanear a comanda; agora que a mesa vem
+                          // fixa do tablet, confirmar o destino e o que evita
+                          // pedido lancado na mesa errada.
+                          child: Row(
                             children: [
-                              Icon(Icons.qr_code_rounded, size: 28, color: AppTheme.accent),
-                              SizedBox(width: 12),
+                              const Icon(Icons.table_restaurant_rounded, size: 28, color: AppTheme.accent),
+                              const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'Escaneie o QR Code da comanda para vincular e enviar o pedido.',
-                                  style: TextStyle(fontSize: 12, color: AppTheme.textMuted, height: 1.4),
+                                  'O pedido será enviado para a cozinha vinculado à Mesa $tableCode.',
+                                  style: const TextStyle(fontSize: 12, color: AppTheme.textMuted, height: 1.4),
                                 ),
                               ),
                             ],
@@ -239,15 +246,15 @@ class ConfirmOrderScreen extends StatelessWidget {
 
                         const SizedBox(height: 12),
 
-                        // Bottom scan button
+                        // Botao principal de confirmacao
                         SizedBox(
                           width: double.infinity,
                           height: 52,
                           child: ElevatedButton.icon(
-                            onPressed: sending ? null : () => _scanAndConfirm(context),
-                            icon: Icon(sending ? Icons.hourglass_top_rounded : Icons.qr_code_scanner_rounded, size: 18),
+                            onPressed: sending ? null : () => _confirm(context),
+                            icon: Icon(sending ? Icons.hourglass_top_rounded : Icons.check_circle_rounded, size: 18),
                             label: Text(
-                              sending ? 'ENVIANDO...' : 'ESCANEAR E ENVIAR',
+                              sending ? 'ENVIANDO...' : 'CONFIRMAR E ENVIAR',
                               style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, letterSpacing: 0.5),
                             ),
                             style: ElevatedButton.styleFrom(

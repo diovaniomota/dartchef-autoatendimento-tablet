@@ -702,25 +702,24 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
       builder: (_) => ConfirmOrderScreen(
         cart: _cart,
         tableCode: _settings?.tableCode ?? '--',
-        onConfirmWithComanda: (comandaCode) {
-          _submitOrder(comandaCode);
-        },
+        onConfirm: _submitOrder,
         sending: _sendingOrder,
       ),
     ));
   }
 
-  Future<void> _submitOrder(String comandaCode) async {
+  Future<void> _submitOrder() async {
     if (_cart.isEmpty) { _showMsg('Adicione itens antes de enviar.', isError: true); return; }
     final settings = _settings;
     if (settings == null) { _showMsg('Configure o tablet antes.', isError: true); return; }
 
-    final settingsWithComanda = settings.copyWith(tableCode: comandaCode);
-
+    // A mesa vem da configuracao do tablet, que fica fixo em uma mesa. Antes
+    // o codigo lido no QR sobrescrevia esse valor (copyWith), o que so servia
+    // no cenario de comanda individual por pessoa — descartado pelo cliente.
     setState(() => _sendingOrder = true);
     try {
       final orderId = await _apiService.submitOrder(
-        settings: settingsWithComanda,
+        settings: settings,
         items: _cart,
         customerName: _customerNameController.text,
         notes: _notesController.text,
@@ -732,7 +731,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
         _notesController.clear();
         _showCart = false;
       });
-      _showMsg('Pedido #$orderId enviado para comanda $comandaCode! 🎉');
+      _showMsg('Pedido #$orderId enviado para a Mesa ${settings.tableCode}! 🎉');
     } on TabletApiException catch (e) {
       _showMsg(e.message, isError: true);
     } catch (_) {
