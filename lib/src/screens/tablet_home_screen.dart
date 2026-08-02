@@ -98,13 +98,30 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
       });
     } on TabletApiException catch (e) {
       if (!mounted) return;
-      setState(() => _errorMessage = e.message);
+      setState(() => _errorMessage = '${e.message}\n\n${_pairingSummary(settings)}');
     } catch (_) {
       if (!mounted) return;
-      setState(() => _errorMessage = 'Não foi possível carregar o cardápio.');
+      // A mensagem generica anterior nao dizia PARA ONDE o tablet estava
+      // tentando falar. Um tablet pareado numa empresa e levado para outra
+      // apenas "nao carregava", sem nada indicando que o endereco era de outro
+      // computador/rede. Mostrar o destino torna o erro auto-explicativo.
+      setState(() => _errorMessage =
+          'Não foi possível falar com o servidor.\n\n${_pairingSummary(settings)}\n'
+          'Se este tablet foi configurado em outro estabelecimento, gere um novo '
+          'QR em Configurações > Tablet / Mesas e pareie novamente.');
     } finally {
       if (mounted) setState(() => _loadingMenu = false);
     }
+  }
+
+  /// Resumo do pareamento atual, usado nas mensagens de erro.
+  String _pairingSummary(TabletSettings settings) {
+    final org = settings.organizationName.trim();
+    return [
+      'Servidor: ${settings.apiBaseUrl}',
+      if (org.isNotEmpty) 'Empresa: $org',
+      'Mesa: ${settings.tableCode}',
+    ].join('\n');
   }
 
   // ──────────────────── Settings dialog ────────────────────
@@ -143,13 +160,19 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
         apiBaseUrl: (decoded['apiBaseUrl'] ?? '').toString().trim(),
         organizationId: (decoded['organizationId'] ?? '').toString().trim(),
         tableCode: (decoded['tableCode'] ?? '').toString().trim(),
+        // Ausente em QRs gerados por versoes antigas do dartchef — cai em
+        // string vazia e o pareamento segue normalmente.
+        organizationName: (decoded['organizationName'] ?? '').toString().trim(),
       );
       if (!next.isComplete) {
         _showMsg('QR Code incompleto. Gere um novo em Configurações > Mesas.', isError: true);
         return;
       }
       await _applySettings(next);
-      _showMsg('Mesa ${next.tableCode} pareada com sucesso!');
+      final org = next.organizationName;
+      _showMsg(org.isEmpty
+          ? 'Mesa ${next.tableCode} pareada com sucesso!'
+          : 'Mesa ${next.tableCode} pareada com $org!');
     } catch (_) {
       _showMsg('QR Code inválido. Escaneie o QR de pareamento do dartchef.', isError: true);
     }

@@ -7,6 +7,7 @@ class LocalSettingsService {
   static const _apiBaseUrlKey = 'tablet.api_base_url';
   static const _organizationIdKey = 'tablet.organization_id';
   static const _tableCodeKey = 'tablet.table_code';
+  static const _organizationNameKey = 'tablet.organization_name';
 
   Future<TabletSettings> load() async {
     final preferences = await SharedPreferences.getInstance();
@@ -21,6 +22,9 @@ class LocalSettingsService {
       tableCode: preferences.getString(_tableCodeKey) ??
           dotenv.env['DEFAULT_TABLE_CODE'] ??
           '01',
+      // Tablets pareados antes desta versao nao tem a chave salva; string
+      // vazia e tratada como "nao informado" e nao impede o funcionamento.
+      organizationName: preferences.getString(_organizationNameKey) ?? '',
     );
   }
 
@@ -32,5 +36,9 @@ class LocalSettingsService {
       settings.organizationId.trim(),
     );
     await preferences.setString(_tableCodeKey, settings.tableCode.trim());
+    await preferences.setString(
+      _organizationNameKey,
+      settings.organizationName.trim(),
+    );
   }
 }
