@@ -599,7 +599,18 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
 
   // ──────────────────── Chamadas de serviço ────────────────────
 
-  Future<void> _callService(String callType, String displayName) async {
+  /// Envia uma solicitacao da mesa para o salao (garcom, vallet, conta).
+  ///
+  /// Os textos sao configuraveis porque nem toda solicitacao e "chamar
+  /// alguem": para a conta, "Chamar a conta?" nao faz sentido.
+  Future<void> _callService(
+    String callType,
+    String displayName, {
+    String? title,
+    String? body,
+    String? confirmLabel,
+    String? successMessage,
+  }) async {
     final settings = _settings;
     if (settings == null || !settings.isComplete) {
       _showMsg('Configure a mesa antes.', isError: true);
@@ -612,9 +623,10 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
       builder: (ctx) => AlertDialog(
         backgroundColor: AppTheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Chamar $displayName?', style: const TextStyle(color: Colors.white)),
+        title: Text(title ?? 'Chamar $displayName?', style: const TextStyle(color: Colors.white)),
         content: Text(
-          'Enviaremos uma notificação para $displayName atender a mesa ${settings.tableCode}.',
+          body ??
+              'Enviaremos uma notificação para $displayName atender a mesa ${settings.tableCode}.',
           style: const TextStyle(color: AppTheme.textMuted),
         ),
         actions: [
@@ -622,7 +634,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: FilledButton.styleFrom(backgroundColor: AppTheme.accent),
-            child: Text('Chamar $displayName'),
+            child: Text(confirmLabel ?? 'Chamar $displayName'),
           ),
         ],
       ),
@@ -632,12 +644,29 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
 
     try {
       await _apiService.callService(settings: settings, callType: callType);
-      _showMsg('$displayName foi chamado! Aguarde um momento.');
+      _showMsg(successMessage ?? '$displayName foi chamado! Aguarde um momento.');
     } on TabletApiException catch (e) {
       _showMsg(e.message, isError: true);
     } catch (_) {
       _showMsg('Não foi possível enviar a solicitação.', isError: true);
     }
+  }
+
+  /// Avisa o salao que a mesa quer fechar a conta. Cai na mesma fila das
+  /// chamadas de garcom (restaurant_service_calls, call_type 'conta'), entao
+  /// aparece no alerta do sistema e no Mapa de Mesas sem nada a mais.
+  Future<void> _requestBill() {
+    final table = _settings?.tableCode ?? '';
+    return _callService(
+      'conta',
+      'a conta',
+      title: 'Pedir a conta?',
+      body: table.isEmpty
+          ? 'Vamos avisar o atendente que a mesa quer fechar a conta.'
+          : 'Vamos avisar o atendente que a Mesa $table quer fechar a conta.',
+      confirmLabel: 'Pedir a conta',
+      successMessage: 'Pedido enviado! O atendente já vai levar a conta.',
+    );
   }
 
   // ──────────────────── Minha conta / pedidos ────────────────────
@@ -1064,6 +1093,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
                       onCartTap: () => setState(() => _showCart = !_showCart),
                       onCallWaiter: () => _callService('garcom', 'Garçom'),
                       onMyAccount: _showMyOrders,
+                      onRequestBill: _requestBill,
                       onRefresh: _loadMenu,
                     ),
                     Expanded(child: _buildContentArea()),

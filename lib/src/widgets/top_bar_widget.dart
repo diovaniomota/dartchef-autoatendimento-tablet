@@ -11,6 +11,7 @@ class TopBarWidget extends StatelessWidget {
     required this.onCartTap,
     required this.onCallWaiter,
     required this.onMyAccount,
+    required this.onRequestBill,
     required this.onRefresh,
   });
 
@@ -21,6 +22,7 @@ class TopBarWidget extends StatelessWidget {
   final VoidCallback onCartTap;
   final VoidCallback onCallWaiter;
   final VoidCallback onMyAccount;
+  final VoidCallback onRequestBill;
   final VoidCallback onRefresh;
 
   @override
@@ -100,7 +102,13 @@ class TopBarWidget extends StatelessWidget {
           const SizedBox(width: 8),
 
           // MINHA CONTA (so icone - texto nao cabe em tablets de tela estreita)
+          // Abre o historico do que a mesa consumiu, sem avisar o salao.
           _TopButton(icon: Icons.receipt_long_rounded, label: 'Minha conta', onTap: onMyAccount, iconOnly: true),
+          const SizedBox(width: 8),
+
+          // PEDIR A CONTA — diferente de "Minha conta": avisa o salao, e o
+          // pedido aparece no sistema igual a chamada de garcom.
+          _TopButton(icon: Icons.point_of_sale_rounded, label: 'Pedir a conta', onTap: onRequestBill, iconOnly: true),
           const SizedBox(width: 8),
 
           // ATUALIZAR
