@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../core/app_language.dart';
 import '../core/app_theme.dart';
 import '../models/menu_product.dart';
 
@@ -58,7 +59,7 @@ class ProductCardWidget extends StatelessWidget {
                           color: AppTheme.accent,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Text('Destaque', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.3)),
+                        child: Text(t('product.featured'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.3)),
                       ),
                     ),
                 ],
@@ -88,7 +89,7 @@ class ProductCardWidget extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: 8),
-                    Text('Preço unitário', style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
+                    Text(t('product.unitPrice'), style: const TextStyle(fontSize: 12, color: AppTheme.textMuted)),
                     Text(
                       currency.format(product.price),
                       style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: AppTheme.accent),
@@ -152,12 +153,12 @@ class _AddButton extends StatelessWidget {
           color: AppTheme.accent,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: const Row(
+        child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.add_rounded, size: 16, color: Colors.white),
-            SizedBox(width: 5),
-            Text('Adicionar', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+            const Icon(Icons.add_rounded, size: 16, color: Colors.white),
+            const SizedBox(width: 5),
+            Text(t('product.add'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
           ],
         ),
       ),

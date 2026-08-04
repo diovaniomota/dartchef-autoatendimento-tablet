@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../core/app_language.dart';
 import '../core/app_theme.dart';
 
 class SidebarWidget extends StatelessWidget {
@@ -49,7 +50,7 @@ class SidebarWidget extends StatelessWidget {
           // DESTAQUES
           _SidebarItem(
             icon: Icons.star_rounded,
-            label: 'DESTAQUES',
+            label: t('sidebar.featured'),
             isActive: activeCategory == 'Todos',
             onTap: () => onCategorySelected('Todos'),
           ),

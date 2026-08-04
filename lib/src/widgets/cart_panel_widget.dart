@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../core/app_language.dart';
 import '../core/app_theme.dart';
 import '../models/cart_item.dart';
 import '../models/menu_product.dart';
@@ -57,7 +58,7 @@ class CartPanelWidget extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('SUGESTÕES DO CHEF', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppTheme.textMuted, letterSpacing: 0.6)),
+                      Text(t('cart.chefSuggestions'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppTheme.textMuted, letterSpacing: 0.6)),
                       Icon(Icons.auto_awesome_rounded, size: 18, color: AppTheme.badgeYellow),
                     ],
                   ),
@@ -76,7 +77,7 @@ class CartPanelWidget extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('RESUMO DO PEDIDO', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppTheme.textMuted, letterSpacing: 0.6)),
+                      Text(t('cart.summary'), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: AppTheme.textMuted, letterSpacing: 0.6)),
                       const Icon(Icons.receipt_long_rounded, size: 18, color: AppTheme.textMuted),
                     ],
                   ),
@@ -102,9 +103,9 @@ class CartPanelWidget extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _SummaryRow(label: 'Subtotal', value: currency.format(cartTotal)),
+                  _SummaryRow(label: t('cart.subtotal'), value: currency.format(cartTotal)),
                   const SizedBox(height: 6),
-                  _SummaryRow(label: 'Taxa de Serviço (10%)', value: currency.format(cartTotal * 0.1)),
+                  _SummaryRow(label: t('cart.serviceFee'), value: currency.format(cartTotal * 0.1)),
                   const Padding(
                     padding: EdgeInsets.symmetric(vertical: 10),
                     child: Divider(color: AppTheme.border, height: 1),
@@ -112,7 +113,7 @@ class CartPanelWidget extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('TOTAL', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
+                      Text(t('cart.total'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
                       Text(currency.format(cartTotal * 1.1), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppTheme.accent)),
                     ],
                   ),
@@ -123,7 +124,7 @@ class CartPanelWidget extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: sendingOrder ? null : onSubmitOrder,
                       icon: Icon(sendingOrder ? Icons.hourglass_top_rounded : Icons.check_circle_rounded, size: 20),
-                      label: Text(sendingOrder ? 'ENVIANDO...' : 'CONFIRMAR PEDIDO', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                      label: Text(sendingOrder ? t('cart.sending') : t('cart.confirm'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.accent,
                         foregroundColor: Colors.white,
@@ -259,7 +260,7 @@ class _CartItemRow extends StatelessWidget {
                         size: 17, color: AppTheme.accent),
                     const SizedBox(width: 6),
                     Text(
-                      notes.isEmpty ? 'Adicionar observação' : 'Alterar observação',
+                      notes.isEmpty ? t('cart.addNote') : t('cart.editNote'),
                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.accent),
                     ),
                   ],
@@ -302,10 +303,10 @@ class _CartItemRow extends StatelessWidget {
                     alignment: Alignment.center,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Icon(Icons.delete_outline_rounded, size: 17, color: AppTheme.accent),
-                        SizedBox(width: 5),
-                        Text('Remover', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.accent)),
+                      children: [
+                        const Icon(Icons.delete_outline_rounded, size: 17, color: AppTheme.accent),
+                        const SizedBox(width: 5),
+                        Text(t('cart.remove'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.accent)),
                       ],
                     ),
                   ),

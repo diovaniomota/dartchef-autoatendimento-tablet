@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import '../core/app_language.dart';
 import '../core/app_theme.dart';
 import '../models/cart_item.dart';
 import '../models/menu_product.dart';
@@ -350,7 +351,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
                   if (!mounted) return;
                   nav.pop();
                 },
-                child: const Text('Salvar'),
+                child: Text(t('notes.save')),
               ),
             ],
           ),
@@ -652,6 +653,18 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
     }
   }
 
+  Future<void> _callWaiter() {
+    final table = _settings?.tableCode ?? '';
+    return _callService(
+      'garcom',
+      t('topbar.waiter'),
+      title: t('call.waiterTitle'),
+      body: t2('call.waiterBody', {'code': table}),
+      confirmLabel: t('call.waiterConfirm'),
+      successMessage: t('call.waiterSuccess'),
+    );
+  }
+
   /// Avisa o salao que a mesa quer fechar a conta. Cai na mesma fila das
   /// chamadas de garcom (restaurant_service_calls, call_type 'conta'), entao
   /// aparece no alerta do sistema e no Mapa de Mesas sem nada a mais.
@@ -733,7 +746,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
         _cart = [..._cart, CartItem(product: product, quantity: 1)];
       }
     });
-    _showMsg('${product.name} adicionado!');
+    _showMsg(t2('order.added', {'product': product.name}));
   }
 
   /// Observacao de UM item do carrinho ("sem salada", "com gelo").
@@ -769,7 +782,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
   // via _removeCartItemAt/_editItemNotes.
 
   void _openConfirmScreen() {
-    if (_cart.isEmpty) { _showMsg('Adicione itens antes de enviar.', isError: true); return; }
+    if (_cart.isEmpty) { _showMsg(t('order.addFirst'), isError: true); return; }
 
     // Dois toques no botao do carrinho empilhavam DUAS telas de confirmacao.
     // Confirmando a de cima, ela fecha e a segunda reaparece com os mesmos
@@ -816,7 +829,10 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
         _notesController.clear();
         _showCart = false;
       });
-      _showMsg('Pedido #$orderId enviado para a Mesa ${settings.tableCode}! 🎉');
+      // Tablet e compartilhado: sem isto, um turista escolhe ingles, vai
+      // embora, e o proximo cliente encontra a tela em outro idioma.
+      resetLanguage();
+      _showMsg(t2('order.sent', {'id': '$orderId', 'code': settings.tableCode}));
     } on TabletApiException catch (e) {
       _showMsg(e.message, isError: true);
     } catch (_) {
@@ -1111,7 +1127,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
                       cartItemCount: _cartItemCount,
                       onSearchChanged: (v) => setState(() => _searchTerm = v),
                       onCartTap: () => setState(() => _showCart = !_showCart),
-                      onCallWaiter: () => _callService('garcom', 'Garçom'),
+                      onCallWaiter: _callWaiter,
                       onMyAccount: _showMyOrders,
                       onRequestBill: _requestBill,
                       onRefresh: _loadMenu,
@@ -1420,17 +1436,20 @@ class _ItemNotesDialog extends StatefulWidget {
 }
 
 class _ItemNotesDialogState extends State<_ItemNotesDialog> {
-  static const _suggestions = [
-    'Sem salada',
-    'Sem cebola',
-    'Sem tomate',
-    'Sem maionese',
-    'Com gelo',
-    'Sem gelo',
-    'Bem passado',
-    'Pouco sal',
-    'Para dividir',
-  ];
+  // Traduzidas no idioma escolhido pelo cliente: a observacao vai literal para
+  // a cozinha, entao um turista escreveria "No salad" e o cozinheiro brasileiro
+  // teria que adivinhar. Aqui pelo menos as opcoes comuns saem padronizadas.
+  static List<String> get _suggestions => [
+        t('notes.noSalad'),
+        t('notes.noOnion'),
+        t('notes.noTomato'),
+        t('notes.noMayo'),
+        t('notes.withIce'),
+        t('notes.noIce'),
+        t('notes.wellDone'),
+        t('notes.lessSalt'),
+        t('notes.toShare'),
+      ];
 
   late final TextEditingController _controller =
       TextEditingController(text: widget.initialNotes);
@@ -1458,7 +1477,7 @@ class _ItemNotesDialogState extends State<_ItemNotesDialog> {
       backgroundColor: AppTheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(
-        'Observação — ${widget.productName}',
+        t2('notes.title', {'product': widget.productName}),
         style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
       ),
       content: SizedBox(
@@ -1467,9 +1486,9 @@ class _ItemNotesDialogState extends State<_ItemNotesDialog> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Toque em uma sugestão ou escreva o que precisar. A cozinha recebe junto com o pedido.',
-              style: TextStyle(color: AppTheme.textMuted, fontSize: 13, height: 1.4),
+            Text(
+              t('notes.help'),
+              style: const TextStyle(color: AppTheme.textMuted, fontSize: 13, height: 1.4),
             ),
             const SizedBox(height: 14),
             Wrap(
@@ -1503,7 +1522,7 @@ class _ItemNotesDialogState extends State<_ItemNotesDialog> {
               minLines: 2,
               style: const TextStyle(color: Colors.white, fontSize: 15),
               decoration: InputDecoration(
-                hintText: 'Ex.: sem salada, bebida com gelo',
+                hintText: t('notes.hint'),
                 hintStyle: const TextStyle(color: AppTheme.textMuted),
                 filled: true,
                 fillColor: AppTheme.background,
@@ -1529,11 +1548,11 @@ class _ItemNotesDialogState extends State<_ItemNotesDialog> {
         if (widget.initialNotes.trim().isNotEmpty)
           TextButton(
             onPressed: () => Navigator.of(context).pop(''),
-            child: const Text('Remover observação', style: TextStyle(color: AppTheme.textMuted)),
+            child: Text(t('notes.clear'), style: const TextStyle(color: AppTheme.textMuted)),
           ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
+          child: Text(t('notes.cancel')),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(_controller.text),

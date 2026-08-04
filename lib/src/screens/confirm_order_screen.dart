@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../core/app_language.dart';
 import '../core/app_theme.dart';
 import '../models/cart_item.dart';
 
@@ -89,13 +90,13 @@ class _ConfirmOrderScreenState extends State<ConfirmOrderScreen> {
                   ),
                   const SizedBox(width: 16),
                   // Title
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Confirme seu Pedido', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
-                        SizedBox(height: 2),
-                        Text('Revise os itens antes de enviar para a cozinha', style: TextStyle(fontSize: 13, color: AppTheme.textMuted)),
+                        Text(t('confirm.title'), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
+                        const SizedBox(height: 2),
+                        Text(t('confirm.subtitle'), style: const TextStyle(fontSize: 13, color: AppTheme.textMuted)),
                       ],
                     ),
                   ),
@@ -118,7 +119,7 @@ class _ConfirmOrderScreenState extends State<ConfirmOrderScreen> {
                           Icon(_confirmed ? Icons.hourglass_top_rounded : Icons.check_circle_rounded, size: 16, color: Colors.white),
                           const SizedBox(width: 8),
                           Text(
-                            _confirmed ? 'ENVIANDO...' : 'CONFIRMAR E ENVIAR',
+                            _confirmed ? t('cart.sending') : t('confirm.action'),
                             style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5),
                           ),
                         ],
@@ -148,7 +149,7 @@ class _ConfirmOrderScreenState extends State<ConfirmOrderScreen> {
                               children: [
                                 const Icon(Icons.restaurant_rounded, size: 20, color: AppTheme.accent),
                                 const SizedBox(width: 10),
-                                Text('Itens do Pedido ($_itemCount)', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                                Text(t2('confirm.items', {'count': '$_itemCount'}), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
                               ],
                             ),
                           );
@@ -253,7 +254,7 @@ class _ConfirmOrderScreenState extends State<ConfirmOrderScreen> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'O pedido será enviado para a cozinha vinculado à Mesa $tableCode.',
+                                  t2('confirm.destination', {'code': tableCode}),
                                   style: const TextStyle(fontSize: 12, color: AppTheme.textMuted, height: 1.4),
                                 ),
                               ),

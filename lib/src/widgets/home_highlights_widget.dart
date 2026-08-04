@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../core/app_language.dart';
 import '../core/app_theme.dart';
 import '../models/menu_product.dart';
 import 'product_card_widget.dart';
@@ -24,7 +25,7 @@ class HomeHighlightsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (products.isEmpty) {
-      return const Center(child: Text('Nenhum produto disponível.', style: TextStyle(color: AppTheme.textMuted)));
+      return Center(child: Text(t('highlights.empty'), style: const TextStyle(color: AppTheme.textMuted)));
     }
 
     return ListView.builder(
@@ -42,17 +43,17 @@ class HomeHighlightsWidget extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
             child: Row(
               children: [
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Destaques da Semana', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
-                      SizedBox(height: 3),
-                      Text('As melhores escolhas preparadas por nossos chefs', style: TextStyle(fontSize: 13, color: AppTheme.textMuted)),
+                      Text(t('highlights.title'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
+                      const SizedBox(height: 3),
+                      Text(t('highlights.subtitle'), style: const TextStyle(fontSize: 13, color: AppTheme.textMuted)),
                     ],
                   ),
                 ),
-                const Text('Ver tudo >', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.accent)),
+                Text(t('highlights.seeAll'), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.accent)),
               ],
             ),
           );
@@ -185,7 +186,7 @@ class _HeroSlide extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(color: AppTheme.badgeYellow, borderRadius: BorderRadius.circular(20)),
-                      child: const Text('O MAIS PEDIDO', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.black, letterSpacing: 0.5)),
+                      child: Text(t('highlights.mostOrdered'), style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.black, letterSpacing: 0.5)),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -209,7 +210,7 @@ class _HeroSlide extends StatelessWidget {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('A partir de', style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7))),
+                            Text(t('product.from'), style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7))),
                             Text(
                               _fmt(product.price),
                               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white),
@@ -222,12 +223,12 @@ class _HeroSlide extends StatelessWidget {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                             decoration: BoxDecoration(color: AppTheme.accent, borderRadius: BorderRadius.circular(8)),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.add_shopping_cart_rounded, size: 16, color: Colors.white),
-                                SizedBox(width: 6),
-                                Text('ADICIONAR', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.4)),
+                                const Icon(Icons.add_shopping_cart_rounded, size: 16, color: Colors.white),
+                                const SizedBox(width: 6),
+                                Text(t('product.addUpper'), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.4)),
                               ],
                             ),
                           ),
