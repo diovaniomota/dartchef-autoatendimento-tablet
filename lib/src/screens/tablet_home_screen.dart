@@ -721,9 +721,14 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
 
   void _addToCart(MenuProduct product) {
     setState(() {
-      final idx = _cart.indexWhere((i) => i.product.id == product.id);
+      // Soma apenas com uma linha do MESMO produto e SEM observacao: um item
+      // com "sem salada" precisa continuar separado, senao a cozinha perde a
+      // instrucao ao ver "2x" numa unica linha.
+      final idx = _cart.indexWhere((i) => i.matches(product, ''));
       if (idx >= 0) {
-        _cart[idx] = _cart[idx].copyWith(quantity: _cart[idx].quantity + 1);
+        final updated = [..._cart];
+        updated[idx] = _cart[idx].copyWith(quantity: _cart[idx].quantity + 1);
+        _cart = updated;
       } else {
         _cart = [..._cart, CartItem(product: product, quantity: 1)];
       }
@@ -731,22 +736,37 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
     _showMsg('${product.name} adicionado!');
   }
 
-  void _changeQty(MenuProduct product, int delta) {
+  /// Observacao de UM item do carrinho ("sem salada", "com gelo").
+  Future<void> _editItemNotes(int index) async {
+    if (index < 0 || index >= _cart.length) return;
+    final item = _cart[index];
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => _ItemNotesDialog(
+        productName: item.product.name,
+        initialNotes: item.notes,
+      ),
+    );
+
+    if (result == null || !mounted) return;
+
     setState(() {
-      final idx = _cart.indexWhere((i) => i.product.id == product.id);
-      if (idx < 0) return;
-      final next = _cart[idx].quantity + delta;
-      if (next <= 0) {
-        _cart = [..._cart]..removeAt(idx);
-        return;
-      }
       final updated = [..._cart];
-      updated[idx] = _cart[idx].copyWith(quantity: next);
+      updated[index] = item.copyWith(notes: result.trim());
       _cart = updated;
     });
   }
 
-  void _removeItem(MenuProduct product, int qty) => _changeQty(product, -qty);
+  void _removeCartItemAt(int index) {
+    if (index < 0 || index >= _cart.length) return;
+    setState(() => _cart = [..._cart]..removeAt(index));
+  }
+
+  // _changeQty/_removeItem foram removidos: buscavam a linha por product.id,
+  // o que virou ambiguo quando o mesmo produto passou a poder ocupar duas
+  // linhas (uma com observacao, outra sem). O carrinho agora opera por indice
+  // via _removeCartItemAt/_editItemNotes.
 
   void _openConfirmScreen() {
     if (_cart.isEmpty) { _showMsg('Adicione itens antes de enviar.', isError: true); return; }
@@ -1110,8 +1130,8 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
                   sendingOrder: _sendingOrder,
                   suggestions: _suggestions,
                   onAddSuggestion: _addToCart,
-                  onChangeQuantity: _changeQty,
-                  onRemoveItem: _removeItem,
+                  onRemoveItem: _removeCartItemAt,
+                  onEditNotes: _editItemNotes,
                   onSubmitOrder: _openConfirmScreen,
                 ),
             ],
@@ -1381,6 +1401,146 @@ class _AboutFeature extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Dialogo de observacao de um item do carrinho.
+///
+/// Traz sugestoes prontas porque digitar em teclado virtual de tablet e lento
+/// e o cliente esta em pe no salao: na maioria dos casos um toque resolve.
+class _ItemNotesDialog extends StatefulWidget {
+  const _ItemNotesDialog({required this.productName, required this.initialNotes});
+
+  final String productName;
+  final String initialNotes;
+
+  @override
+  State<_ItemNotesDialog> createState() => _ItemNotesDialogState();
+}
+
+class _ItemNotesDialogState extends State<_ItemNotesDialog> {
+  static const _suggestions = [
+    'Sem salada',
+    'Sem cebola',
+    'Sem tomate',
+    'Sem maionese',
+    'Com gelo',
+    'Sem gelo',
+    'Bem passado',
+    'Pouco sal',
+    'Para dividir',
+  ];
+
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initialNotes);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  /// Acrescenta a sugestao ao que ja existe, em vez de substituir: o cliente
+  /// pode querer "Sem cebola" E "Sem tomate".
+  void _append(String suggestion) {
+    final current = _controller.text.trim();
+    if (current.toLowerCase().contains(suggestion.toLowerCase())) return;
+    setState(() {
+      _controller.text = current.isEmpty ? suggestion : '$current, $suggestion';
+      _controller.selection = TextSelection.collapsed(offset: _controller.text.length);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppTheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Text(
+        'Observação — ${widget.productName}',
+        style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+      ),
+      content: SizedBox(
+        width: 460,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Toque em uma sugestão ou escreva o que precisar. A cozinha recebe junto com o pedido.',
+              style: TextStyle(color: AppTheme.textMuted, fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: _suggestions
+                  .map((s) => Material(
+                        color: AppTheme.surfaceHigh,
+                        borderRadius: BorderRadius.circular(20),
+                        child: InkWell(
+                          onTap: () => _append(s),
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            constraints: const BoxConstraints(minHeight: 44),
+                            padding: const EdgeInsets.symmetric(horizontal: 14),
+                            alignment: Alignment.center,
+                            child: Text(s,
+                                style: const TextStyle(
+                                    color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                          ),
+                        ),
+                      ))
+                  .toList(),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _controller,
+              autofocus: false,
+              maxLength: 200,
+              maxLines: 3,
+              minLines: 2,
+              style: const TextStyle(color: Colors.white, fontSize: 15),
+              decoration: InputDecoration(
+                hintText: 'Ex.: sem salada, bebida com gelo',
+                hintStyle: const TextStyle(color: AppTheme.textMuted),
+                filled: true,
+                fillColor: AppTheme.background,
+                counterStyle: const TextStyle(color: AppTheme.textMuted),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppTheme.border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppTheme.border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppTheme.accent, width: 2),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        if (widget.initialNotes.trim().isNotEmpty)
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(''),
+            child: const Text('Remover observação', style: TextStyle(color: AppTheme.textMuted)),
+          ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(context).pop(_controller.text),
+          style: FilledButton.styleFrom(backgroundColor: AppTheme.accent),
+          child: const Text('Salvar'),
+        ),
+      ],
     );
   }
 }

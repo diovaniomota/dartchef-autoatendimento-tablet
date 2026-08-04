@@ -83,6 +83,9 @@ class TabletApiService {
             .map((item) => {
                   'productId': item.product.id,
                   'quantity': item.quantity,
+                  // A API grava isto em restaurant_order_items.notes, que o PDV
+                  // e a conferencia de conta ja exibem como "Obs:".
+                  'notes': item.notes.trim(),
                 })
             .toList(),
       }),

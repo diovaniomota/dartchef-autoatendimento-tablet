@@ -14,8 +14,8 @@ class CartPanelWidget extends StatelessWidget {
     required this.sendingOrder,
     required this.suggestions,
     required this.onAddSuggestion,
-    required this.onChangeQuantity,
     required this.onRemoveItem,
+    required this.onEditNotes,
     required this.onSubmitOrder,
   });
 
@@ -25,8 +25,12 @@ class CartPanelWidget extends StatelessWidget {
   final bool sendingOrder;
   final List<MenuProduct> suggestions;
   final void Function(MenuProduct) onAddSuggestion;
-  final void Function(MenuProduct product, int delta) onChangeQuantity;
-  final void Function(MenuProduct product, int quantity) onRemoveItem;
+
+  // Identificam a LINHA do carrinho, nao o produto: com observacao por item, o
+  // mesmo produto pode ocupar duas linhas (um sem salada, outro normal), e
+  // buscar por product.id removeria/alteraria a linha errada.
+  final void Function(int index) onRemoveItem;
+  final void Function(int index) onEditNotes;
   final VoidCallback onSubmitOrder;
 
   @override
@@ -77,7 +81,13 @@ class CartPanelWidget extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  ...cart.map((item) => _CartItemRow(item: item, currency: currency, onRemove: () => onRemoveItem(item.product, item.quantity))),
+                  // asMap para ter o indice: e ele que identifica a linha.
+                  ...cart.asMap().entries.map((entry) => _CartItemRow(
+                        item: entry.value,
+                        currency: currency,
+                        onRemove: () => onRemoveItem(entry.key),
+                        onEditNotes: () => onEditNotes(entry.key),
+                      )),
                 ],
               ),
             ),
@@ -180,13 +190,21 @@ class _SuggestionItem extends StatelessWidget {
 
 // ── Cart item row ──
 class _CartItemRow extends StatelessWidget {
-  const _CartItemRow({required this.item, required this.currency, required this.onRemove});
+  const _CartItemRow({
+    required this.item,
+    required this.currency,
+    required this.onRemove,
+    required this.onEditNotes,
+  });
   final CartItem item;
   final NumberFormat currency;
   final VoidCallback onRemove;
+  final VoidCallback onEditNotes;
 
   @override
   Widget build(BuildContext context) {
+    final notes = item.notes.trim();
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: Column(
@@ -198,7 +216,59 @@ class _CartItemRow extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white),
           ),
-          const SizedBox(height: 4),
+
+          // Observacao aparece logo abaixo do nome: e o que o cliente precisa
+          // conferir antes de confirmar o pedido.
+          if (notes.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppTheme.accent.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppTheme.accent.withValues(alpha: 0.3)),
+              ),
+              child: Text(
+                notes,
+                style: const TextStyle(fontSize: 12, color: AppTheme.accent, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 6),
+
+          // Botao de observacao com alvo de 48 de altura, mesmo criterio do
+          // botao Remover.
+          Material(
+            color: AppTheme.surfaceHigh,
+            borderRadius: BorderRadius.circular(10),
+            child: InkWell(
+              onTap: onEditNotes,
+              borderRadius: BorderRadius.circular(10),
+              splashColor: AppTheme.accent.withValues(alpha: 0.28),
+              child: Container(
+                width: double.infinity,
+                constraints: const BoxConstraints(minHeight: 44),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(notes.isEmpty ? Icons.edit_note_rounded : Icons.check_circle_rounded,
+                        size: 17, color: AppTheme.accent),
+                    const SizedBox(width: 6),
+                    Text(
+                      notes.isEmpty ? 'Adicionar observação' : 'Alterar observação',
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppTheme.accent),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 6),
           Row(
             children: [
               Text('${item.quantity}x', style: const TextStyle(fontSize: 13, color: AppTheme.textMuted)),
