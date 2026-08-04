@@ -18,7 +18,18 @@ class DartFoodMesaApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         title: 'DartFood Mesa',
         theme: AppTheme.build(),
-        home: const TabletHomeScreen(),
+        // SEM const aqui, de proposito.
+        //
+        // Com `const TabletHomeScreen()` o Flutter reutiliza a MESMA instancia
+        // em todo rebuild, e Element.updateChild tem um atalho: quando o widget
+        // novo e == ao antigo, a subarvore NAO e reconstruida. Resultado: o
+        // idioma mudava no notifier, o MaterialApp rebuildava, e a tela
+        // continuava em portugues — foi exatamente o que o cliente relatou.
+        //
+        // Tambem NAO se usa key aqui: uma key nova recriaria o State e o
+        // carrinho do cliente seria perdido ao trocar de idioma. Instancia nova
+        // sem key preserva o State e ainda assim forca o rebuild.
+        home: TabletHomeScreen(),
       ),
     );
   }
