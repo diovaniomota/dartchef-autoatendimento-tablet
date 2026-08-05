@@ -160,6 +160,9 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'sent.follow': 'ACOMPANHAR PEDIDO',
     'error.menuTitle': 'Não foi possível carregar o cardápio',
     'error.retry': 'TENTAR NOVAMENTE',
+    'welcome.offline': 'Tablet não conectado',
+    'welcome.offlineHelp': 'Chame um atendente para configurar o tablet desta mesa.',
+    'welcome.connect': 'CONECTAR TABLET',
     'lang.label': 'Idioma',
   },
 
@@ -277,6 +280,9 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'sent.follow': 'TRACK ORDER',
     'error.menuTitle': 'Could not load the menu',
     'error.retry': 'TRY AGAIN',
+    'welcome.offline': 'Tablet not connected',
+    'welcome.offlineHelp': 'Please ask a staff member to set up this table tablet.',
+    'welcome.connect': 'CONNECT TABLET',
     'lang.label': 'Language',
   },
 
@@ -394,6 +400,9 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'sent.follow': 'SEGUIR PEDIDO',
     'error.menuTitle': 'No se pudo cargar el menú',
     'error.retry': 'REINTENTAR',
+    'welcome.offline': 'Tablet no conectado',
+    'welcome.offlineHelp': 'Pida a un camarero que configure el tablet de esta mesa.',
+    'welcome.connect': 'CONECTAR TABLET',
     'lang.label': 'Idioma',
   },
 };

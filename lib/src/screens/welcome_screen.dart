@@ -23,6 +23,7 @@ class WelcomeScreen extends StatelessWidget {
     required this.primaryColor,
     required this.onStart,
     required this.onSettings,
+    this.conectado = true,
   });
 
   final String restaurantName;
@@ -41,6 +42,13 @@ class WelcomeScreen extends StatelessWidget {
   /// livre, e sem a engrenagem nao haveria como parear o tablet ou trocar a
   /// mesa — o unico caminho ficava atras de um cardapio que ainda nao carregou.
   final VoidCallback onSettings;
+
+  /// Tablet pareado e com cardapio carregado.
+  ///
+  /// Desconectado, o botao de comecar leva a uma tela de erro — o cliente toca,
+  /// nao acontece nada de util e ele chama o garcom. Melhor a tela dizer o que
+  /// falta e oferecer o caminho, ainda que seja o funcionario quem resolve.
+  final bool conectado;
 
   Color get _accent {
     final hex = primaryColor.replaceAll('#', '').trim();
@@ -83,22 +91,6 @@ class WelcomeScreen extends StatelessWidget {
               child: SizedBox.expand(),
             ),
 
-            // Discreta no canto: e para o operador, nao para o cliente. Fica
-            // sobre o conteudo para nao empurrar a marca nem os idiomas.
-            Positioned(
-              left: 4,
-              bottom: 4,
-              child: SafeArea(
-                child: IconButton(
-                  onPressed: onSettings,
-                  tooltip: t('settings.tooltip'),
-                  iconSize: 22,
-                  constraints: const BoxConstraints(minWidth: 52, minHeight: 52),
-                  icon: const Icon(Icons.settings, color: Colors.white24),
-                ),
-              ),
-            ),
-
             SafeArea(
               child: LayoutBuilder(
                 builder: (context, restricoes) {
@@ -138,7 +130,7 @@ class WelcomeScreen extends StatelessWidget {
                                   ),
                                 ),
                               const SizedBox(height: 22),
-                              _botaoComecar(),
+                              if (conectado) _botaoComecar() else _avisoDesconectado(),
                             ],
                           ),
                         ),
@@ -146,6 +138,26 @@ class WelcomeScreen extends StatelessWidget {
                     ),
                   );
                 },
+              ),
+            ),
+
+            // POR ULTIMO no Stack, de proposito.
+            //
+            // Antes vinha antes da area de rolagem, e no Flutter o filho
+            // declarado depois pinta por cima e fica com o toque: a rolagem
+            // cobre a tela inteira, entao a engrenagem aparecia mas nao
+            // respondia a nada.
+            Positioned(
+              left: 4,
+              bottom: 4,
+              child: SafeArea(
+                child: IconButton(
+                  onPressed: onSettings,
+                  tooltip: t('settings.tooltip'),
+                  iconSize: 22,
+                  constraints: const BoxConstraints(minWidth: 56, minHeight: 56),
+                  icon: const Icon(Icons.settings, color: Colors.white38),
+                ),
               ),
             ),
           ],
@@ -177,6 +189,54 @@ class WelcomeScreen extends StatelessWidget {
           fontWeight: FontWeight.w900,
           letterSpacing: 1.5,
           height: 1.15,
+        ),
+      );
+
+  Widget _avisoDesconectado() => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.black.withValues(alpha: 0.45),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppTheme.danger),
+        ),
+        child: Column(
+          children: [
+            const Icon(Icons.wifi_off, color: AppTheme.danger, size: 34),
+            const SizedBox(height: 10),
+            Text(
+              t('welcome.offline'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              t('welcome.offlineHelp'),
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppTheme.textMuted, fontSize: 13.5, height: 1.35),
+            ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              height: 62,
+              child: FilledButton.icon(
+                onPressed: onSettings,
+                style: FilledButton.styleFrom(
+                  backgroundColor: _accent,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                icon: const Icon(Icons.settings, size: 22),
+                label: Text(
+                  t('welcome.connect'),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, letterSpacing: 0.6),
+                ),
+              ),
+            ),
+          ],
         ),
       );
 

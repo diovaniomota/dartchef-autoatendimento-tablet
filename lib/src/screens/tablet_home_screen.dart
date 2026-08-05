@@ -913,6 +913,9 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
           primaryColor: _menu?.primaryColor ?? '',
           onStart: _startSession,
           onSettings: _requestSettingsAccess,
+          // Sem cardapio carregado nao ha o que pedir: a tela oferece conectar
+          // em vez de um botao que leva a um erro.
+          conectado: _menu != null,
         ),
       );
     }

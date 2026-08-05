@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/app_language.dart';
 import '../core/app_theme.dart';
+import 'flag_icon.dart';
 
 /// Cabecalho e rodape comuns as telas de pedido (categorias, produtos, detalhe,
 /// carrinho).
@@ -76,6 +77,14 @@ class TabletTopBar extends StatelessWidget {
                 ? Center(child: _titulo())
                 : const SizedBox.shrink(),
           ),
+
+          // Troca de idioma em TODAS as telas do pedido, nao so na de espera.
+          //
+          // Quem tocou em Espanhol sem querer ficava preso: a partir dali o app
+          // inteiro estava em outro idioma e nao havia como voltar sem encerrar
+          // a mesa. A bandeira atual serve de rotulo — nao precisa saber ler o
+          // idioma da tela para achar o botao.
+          const LanguageButton(),
 
           if (onSearchTap != null)
             TabletBarButton(
