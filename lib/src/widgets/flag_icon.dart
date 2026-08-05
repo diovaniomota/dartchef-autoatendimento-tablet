@@ -87,7 +87,16 @@ class FlagIcon extends StatelessWidget {
   static Widget _spain(double w, double h) => Stack(
         fit: StackFit.expand,
         children: [
+          // stretch e obrigatorio aqui, nao enfeite.
+          //
+          // ColoredBox sem filho encolhe para largura ZERO quando a restricao
+          // de largura e solta, e Column passa restricao solta por padrao
+          // (crossAxisAlignment.center). O resultado era a bandeira da Espanha
+          // simplesmente nao aparecer — a faixa existia na arvore, com a cor
+          // certa, e pintava nada. A dos EUA escapa porque usa
+          // Container(color:), que sem filho expande em vez de encolher.
           Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: const [
               Expanded(flex: 1, child: ColoredBox(color: Color(0xFFAA151B))),
               Expanded(flex: 2, child: ColoredBox(color: Color(0xFFF1BF00))),

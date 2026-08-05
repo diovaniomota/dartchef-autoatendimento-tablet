@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 // Modo quiosque via Screen Pinning nativo do Android (Activity.startLockTask/
@@ -11,6 +12,9 @@ class KioskService {
   static const _channel = MethodChannel('br.com.dartsoft.dartchef/kiosk');
 
   Future<void> enterKiosk() async {
+    // No navegador nao existe canal nativo, e chamar so gera excecao a cada
+    // partida. Quiosque de verdade e no tablet; em Chrome o app roda para teste.
+    if (kIsWeb) return;
     try {
       await _channel.invokeMethod('enterKiosk');
     } catch (_) {
@@ -20,6 +24,7 @@ class KioskService {
   }
 
   Future<void> exitKiosk() async {
+    if (kIsWeb) return;
     try {
       await _channel.invokeMethod('exitKiosk');
     } catch (_) {

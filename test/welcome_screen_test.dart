@@ -46,26 +46,41 @@ void main() {
     expect(find.byType(FlagIcon), findsNWidgets(AppLanguage.values.length));
   });
 
-  testWidgets('a bandeira da Espanha tem o vermelho, o amarelo e o brasao', (tester) async {
+  testWidgets('as faixas da bandeira da Espanha ocupam a largura toda', (tester) async {
+    // Regressao: as faixas ESTAVAM na arvore, com as cores certas, e pintavam
+    // nada — ColoredBox sem filho encolhe para largura zero sob restricao
+    // solta, e Column passa restricao solta. A bandeira nao aparecia.
+    //
+    // Conferir cor na arvore nao pegava isso. Aqui se mede o que foi PINTADO.
     await tester.pumpWidget(_montar());
 
-    final espanha = find.descendant(
-      of: find.byWidgetPredicate(
-        (w) => w is FlagIcon && w.language == AppLanguage.es,
-      ),
-      matching: find.byType(ColoredBox),
+    const largura = 40.0;
+    final espanhaFinder = find.byWidgetPredicate(
+      (w) => w is FlagIcon && w.language == AppLanguage.es,
     );
+    expect(tester.getSize(espanhaFinder).width, largura);
 
-    final cores = tester
-        .widgetList<ColoredBox>(espanha)
-        .map((box) => box.color)
-        .toSet();
-
+    final faixas = tester.widgetList<ColoredBox>(
+      find.descendant(of: espanhaFinder, matching: find.byType(ColoredBox)),
+    );
+    final cores = faixas.map((box) => box.color).toSet();
     expect(cores, contains(const Color(0xFFAA151B))); // faixas vermelhas
     expect(cores, contains(const Color(0xFFF1BF00))); // faixa amarela
     // Vermelho-amarelo-vermelho puro se confunde com outras bandeiras; os
     // pilares em ouro escuro sao o que identifica a Espanha neste tamanho.
     expect(cores, contains(const Color(0xFFC8930A)));
+
+    for (final cor in [const Color(0xFFAA151B), const Color(0xFFF1BF00)]) {
+      final faixa = find.descendant(
+        of: espanhaFinder,
+        matching: find.byWidgetPredicate((w) => w is ColoredBox && w.color == cor),
+      );
+      expect(
+        tester.getSize(faixa.first).width,
+        largura,
+        reason: 'a faixa $cor tem de atravessar a bandeira inteira',
+      );
+    }
   });
 
   testWidgets('as tres opcoes de idioma aparecem no proprio idioma', (tester) async {

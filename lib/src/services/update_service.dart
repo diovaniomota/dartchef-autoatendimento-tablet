@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:open_filex/open_filex.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -99,6 +100,16 @@ class UpdateService {
     void Function(double progress)? onProgress,
     Future<void> Function()? beforeOpenInstaller,
   }) async {
+    // No navegador nao existe instalador nem pasta temporaria:
+    // getTemporaryDirectory falha e o erro chega ao usuario como "Unsupported
+    // operation", que nao diz nada. Recusa com a razao explicita — em Chrome o
+    // app roda para teste, e atualizar e coisa do tablet.
+    if (kIsWeb) {
+      throw const UpdateException(
+        'Atualizar o app só funciona no tablet. No navegador o app roda apenas para teste.',
+      );
+    }
+
     final client = http.Client();
     try {
       final response = await client.send(http.Request('GET', Uri.parse(downloadUrl)));
