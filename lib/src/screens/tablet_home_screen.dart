@@ -105,7 +105,8 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
   void _startSession() {
     setState(() => _sessionActive = true);
     _sawOpenOrder = false;
-    _resetIdleTimer();
+    userActivity.ping();
+    _startIdleWatch();
     _startTableWatch();
     // Recarrega o cardapio ao abrir a mesa: preco ou item alterado durante o
     // dia chega sem ninguem reiniciar o tablet.
@@ -121,12 +122,21 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
 
     _tableWatchTimer?.cancel();
     _idleTimer?.cancel();
+    _idleWarningOpen = false;
 
-    // Fecha o aviso de ociosidade, se estiver aberto: sem isto ele ficaria
-    // sobre a tela de espera.
-    if (_idleWarningOpen && mounted) {
-      Navigator.of(context, rootNavigator: true).pop();
-      _idleWarningOpen = false;
+    // Derruba TUDO que estiver aberto por cima: aviso de ociosidade, senha,
+    // configuracao, confirmacao de pedido.
+    //
+    // Nao basta fechar o aviso de ociosidade. Trocar a arvore por baixo de uma
+    // rota que continua montada deixa essa rota dependendo de widgets que
+    // deixaram de existir, e o app quebra com
+    // "'_dependents.isEmpty': is not true" — foi assim que apareceu, com a tela
+    // de configuracao aberta quando a ociosidade estourou.
+    if (mounted) {
+      final navegador = Navigator.of(context, rootNavigator: true);
+      if (navegador.canPop()) {
+        navegador.popUntil((rota) => rota.isFirst);
+      }
     }
 
     if (!mounted) return;
@@ -184,10 +194,17 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
 
   // ──────────────────── Ociosidade ────────────────────
 
-  void _resetIdleTimer() {
-    if (!_sessionActive) return;
+  /// Verifica periodicamente quanto tempo passou desde o ultimo toque.
+  ///
+  /// Substitui o cronometro que era reiniciado pela tela. O toque agora e
+  /// registrado no builder do MaterialApp, acima de todas as rotas, entao
+  /// digitar a senha ou mexer na configuracao tambem conta como presenca.
+  void _startIdleWatch() {
     _idleTimer?.cancel();
-    _idleTimer = Timer(kIdleLimit, _askIfStillThere);
+    _idleTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (!_sessionActive || _idleWarningOpen) return;
+      if (userActivity.isIdle) _askIfStillThere();
+    });
   }
 
   /// Pergunta antes de encerrar por ociosidade.
@@ -212,7 +229,8 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
     _idleWarningOpen = false;
 
     if (continuar == true) {
-      _resetIdleTimer();
+      // O toque no botao ja passou pelo builder do MaterialApp e atualizou o
+      // ultimo toque; nao ha cronometro para reiniciar aqui.
       return;
     }
     _endSession();
@@ -1285,13 +1303,10 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
 
     return PopScope(
       canPop: false,
-      // Qualquer toque na tela conta como presenca e reinicia a contagem de
-      // ociosidade. Listener e nao GestureDetector: onPointerDown observa sem
-      // competir com os gestos dos widgets de baixo.
-      child: Listener(
-        behavior: HitTestBehavior.translucent,
-        onPointerDown: (_) => _resetIdleTimer(),
-        child: Scaffold(
+      // A presenca do cliente e registrada no builder do MaterialApp, acima de
+      // todas as rotas — nao aqui. Um Listener nesta altura nao veria o toque
+      // dentro de dialogo, que e rota separada no Overlay.
+      child: Scaffold(
         backgroundColor: AppTheme.background,
         body: SafeArea(
           child: Row(
@@ -1337,8 +1352,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
                   onEditNotes: _editItemNotes,
                   onSubmitOrder: _openConfirmScreen,
                 ),
-              ],
-            ),
+            ],
           ),
         ),
       ),
