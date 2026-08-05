@@ -88,9 +88,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               Expanded(
                 child: LayoutBuilder(
                   builder: (context, restricoes) {
-                    // Foto ao lado no tablet deitado; empilhada quando a
-                    // largura nao dá para as duas colunas respirarem.
-                    final lado = restricoes.maxWidth >= 700;
+                    // Foto ao lado ja no tablet EM PE, que e como a referencia
+                    // mostra. O limite era 700 e caia no empilhado justamente no
+                    // tamanho mais comum (cerca de 680), deixando a foto pequena
+                    // e o resto solto embaixo.
+                    final lado = restricoes.maxWidth >= 560;
                     return lado ? _duasColunas() : _empilhado();
                   },
                 ),
@@ -106,18 +108,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Widget _duasColunas() => Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Metade da tela, encostada na borda e sem moldura: e a foto que faz
+          // o cliente decidir, e recuo com cantos arredondados a transformava
+          // num cartaozinho no meio da tela.
+          Expanded(flex: 5, child: _foto()),
           Expanded(
             flex: 5,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 6, 12),
-              child: _foto(),
-            ),
-          ),
-          Expanded(
-            flex: 6,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(6, 12, 12, 12),
-              child: _dados(),
+            child: ColoredBox(
+              color: AppTheme.surface,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                child: _dados(),
+              ),
             ),
           ),
         ],
@@ -128,17 +130,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: 220, child: _foto()),
+            // Largura explicita: sem ela a foto encolhe ate a proporcao dela
+            // propria e vira miniatura no canto.
+            SizedBox(width: double.infinity, height: 240, child: _foto(raio: 14)),
             const SizedBox(height: 14),
             _dados(),
           ],
         ),
       );
 
-  Widget _foto() {
+  Widget _foto({double raio = 0}) {
     final url = widget.produto.imageUrl ?? '';
     return ClipRRect(
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(raio),
       child: url.isEmpty
           ? const ColoredBox(
               color: AppTheme.surfaceHigh,
@@ -179,16 +183,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             widget.currency.format(_unitario),
             style: const TextStyle(
               color: AppTheme.accent,
-              fontSize: 26,
+              fontSize: 28,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 18),
+          _divisor(),
           _secao(t('detail.quantity')),
           const SizedBox(height: 8),
           _seletorQuantidade(),
           for (final grupo in widget.produto.optionGroups) ...[
-            const SizedBox(height: 18),
+            _divisor(),
             _secao(grupo.required
                 ? grupo.name.toUpperCase()
                 : '${grupo.name.toUpperCase()} (${t('options.optional')})'),
@@ -205,7 +209,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 onTap: () => setState(() => _escolhas[grupo.id] = opcao),
               ),
           ],
-          const SizedBox(height: 18),
+          _divisor(),
           _secao(t('detail.notes')),
           const SizedBox(height: 8),
           TextField(
@@ -237,6 +241,14 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         ],
       );
 
+  /// Fio fino entre as secoes, como na referencia: separa quantidade, molho e
+  /// observacao sem precisar de espaco em branco, que num painel estreito
+  /// empurraria o botao para fora da tela.
+  Widget _divisor() => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Divider(color: AppTheme.border, height: 1),
+      );
+
   Widget _secao(String texto) => Text(
         texto,
         style: const TextStyle(
@@ -256,10 +268,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             ativo: _quantidade > 1,
             onTap: () => setState(() => _quantidade -= 1),
           ),
+          // O numero tambem numa caixa, como na referencia: os tres elementos
+          // formam um controle so, em vez de dois botoes com um texto solto no
+          // meio.
           Container(
-            width: 74,
+            width: 86,
             height: kTabletTapTarget,
             alignment: Alignment.center,
+            margin: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: AppTheme.background,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppTheme.border),
+            ),
             child: Text(
               '$_quantidade',
               style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900),
