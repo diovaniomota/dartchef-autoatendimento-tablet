@@ -733,18 +733,36 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
 
   // ──────────────────── Carrinho ────────────────────
 
-  void _addToCart(MenuProduct product) {
+  Future<void> _addToCart(MenuProduct product) async {
+    // Produto com variacao (caipira de vodka ou de cachaca) pergunta antes: sem
+    // a escolha o bar nao sabe o que preparar.
+    var escolhas = const <ProductOptionChoice>[];
+    if (product.optionGroups.isNotEmpty) {
+      final resultado = await showDialog<List<ProductOptionChoice>>(
+        context: context,
+        builder: (ctx) => _ProductOptionsDialog(product: product, currency: _currency),
+      );
+      if (resultado == null) return; // cancelou
+      escolhas = resultado;
+    }
+
+    if (!mounted) return;
+
     setState(() {
-      // Soma apenas com uma linha do MESMO produto e SEM observacao: um item
-      // com "sem salada" precisa continuar separado, senao a cozinha perde a
-      // instrucao ao ver "2x" numa unica linha.
-      final idx = _cart.indexWhere((i) => i.matches(product, ''));
+      // Soma apenas com uma linha do MESMO produto, sem observacao e com as
+      // MESMAS variacoes: um item com "sem salada", ou de outro tipo, precisa
+      // continuar separado, senao a cozinha perde a instrucao ao ver "2x" numa
+      // unica linha.
+      final idx = _cart.indexWhere((i) => i.matchesWithOptions(product, '', escolhas));
       if (idx >= 0) {
         final updated = [..._cart];
         updated[idx] = _cart[idx].copyWith(quantity: _cart[idx].quantity + 1);
         _cart = updated;
       } else {
-        _cart = [..._cart, CartItem(product: product, quantity: 1)];
+        _cart = [
+          ..._cart,
+          CartItem(product: product, quantity: 1, chosenOptions: escolhas),
+        ];
       }
     });
     _showMsg(t2('order.added', {'product': product.name}));
@@ -1517,6 +1535,205 @@ class _ItemNotesDialogState extends State<_ItemNotesDialog> {
           child: const Text('Salvar'),
         ),
       ],
+    );
+  }
+}
+
+/// Pergunta a variacao do produto antes de ele entrar no carrinho.
+///
+/// Botoes grandes e uma coluna so: o tablet fica de pe no salao, o cliente
+/// escolhe em pe e muitas vezes sem oculos.
+class _ProductOptionsDialog extends StatefulWidget {
+  const _ProductOptionsDialog({required this.product, required this.currency});
+
+  final MenuProduct product;
+  final NumberFormat currency;
+
+  @override
+  State<_ProductOptionsDialog> createState() => _ProductOptionsDialogState();
+}
+
+class _ProductOptionsDialogState extends State<_ProductOptionsDialog> {
+  /// Escolha de cada grupo, por id do grupo.
+  final Map<int, ProductOptionChoice> _escolhas = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // Grupo opcional com uma unica opcao ja vem marcado: nao ha decisao a tomar.
+    for (final grupo in widget.product.optionGroups) {
+      if (!grupo.required && grupo.choices.length == 1) {
+        _escolhas[grupo.id] = grupo.choices.first;
+      }
+    }
+  }
+
+  bool get _completo => widget.product.optionGroups
+      .where((grupo) => grupo.required)
+      .every((grupo) => _escolhas.containsKey(grupo.id));
+
+  double get _total =>
+      widget.product.price +
+      _escolhas.values.fold(0.0, (soma, escolha) => soma + escolha.priceDelta);
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppTheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Text(
+        widget.product.name,
+        style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+      ),
+      content: SizedBox(
+        width: 460,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final grupo in widget.product.optionGroups) ...[
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Text(
+                    grupo.required ? grupo.name : '${grupo.name} (${t('options.optional')})',
+                    style: const TextStyle(
+                      color: AppTheme.textMuted,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+                for (final opcao in grupo.choices)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: _OpcaoBotao(
+                      nome: opcao.name,
+                      // Mostra so quando muda o preco: "+ R$ 0,00" em toda
+                      // opcao vira ruido e faz o cliente procurar pegadinha.
+                      extra: opcao.priceDelta == 0
+                          ? ''
+                          : (opcao.priceDelta > 0
+                              ? '+ ${widget.currency.format(opcao.priceDelta)}'
+                              : '- ${widget.currency.format(opcao.priceDelta.abs())}'),
+                      selecionado: _escolhas[grupo.id]?.id == opcao.id,
+                      onTap: () => setState(() => _escolhas[grupo.id] = opcao),
+                    ),
+                  ),
+                const SizedBox(height: 6),
+              ],
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    t('cart.total'),
+                    style: const TextStyle(color: AppTheme.textMuted, fontSize: 14),
+                  ),
+                  Text(
+                    widget.currency.format(_total),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(t('notes.cancel'), style: const TextStyle(color: AppTheme.textMuted)),
+        ),
+        FilledButton(
+          // Desabilitado enquanto falta escolher: melhor o botao nao responder
+          // do que aceitar e a comanda chegar incompleta no bar.
+          onPressed: _completo
+              ? () => Navigator.of(context).pop(_escolhas.values.toList())
+              : null,
+          style: FilledButton.styleFrom(
+            backgroundColor: AppTheme.accent,
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+          ),
+          child: Text(
+            t('product.addUpper'),
+            style: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _OpcaoBotao extends StatelessWidget {
+  const _OpcaoBotao({
+    required this.nome,
+    required this.extra,
+    required this.selecionado,
+    required this.onTap,
+  });
+
+  final String nome;
+  final String extra;
+  final bool selecionado;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selecionado ? AppTheme.accent.withValues(alpha: 0.18) : AppTheme.background,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          // 60 de altura: alvo de toque confortavel de pe, com o tablet fixo
+          // na mesa.
+          constraints: const BoxConstraints(minHeight: 60),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selecionado ? AppTheme.accent : AppTheme.border,
+              width: selecionado ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                selecionado ? Icons.check_circle : Icons.circle_outlined,
+                color: selecionado ? AppTheme.accent : AppTheme.textMuted,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  nome,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: selecionado ? FontWeight.w800 : FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (extra.isNotEmpty)
+                Text(
+                  extra,
+                  style: const TextStyle(
+                    color: AppTheme.textMuted,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

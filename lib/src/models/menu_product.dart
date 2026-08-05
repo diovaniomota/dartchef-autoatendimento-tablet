@@ -8,6 +8,7 @@ class MenuProduct {
     this.subcategory,
     this.imageUrl,
     this.description = '',
+    this.optionGroups = const [],
   });
 
   final int id;
@@ -29,6 +30,10 @@ class MenuProduct {
   /// campo, e o app precisa continuar funcionando sem ele.
   final String description;
 
+  /// Variacoes que o cliente escolhe na hora de pedir ("Caipira de morango"
+  /// com vodka ou com cachaca). Vazio na maioria dos produtos.
+  final List<ProductOptionGroup> optionGroups;
+
   factory MenuProduct.fromJson(Map<String, dynamic> json) {
     return MenuProduct(
       id: json['id'] as int,
@@ -39,6 +44,62 @@ class MenuProduct {
       subcategory: json['subcategory'] as String?,
       imageUrl: json['image_url'] as String?,
       description: (json['description'] as String? ?? '').trim(),
+      optionGroups: ((json['option_groups'] as List<dynamic>?) ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(ProductOptionGroup.fromJson)
+          .where((group) => group.choices.isNotEmpty)
+          .toList(),
+    );
+  }
+}
+
+/// Pergunta feita ao cliente sobre um produto. Ex.: nome 'Tipo', opcoes
+/// 'Vodka' e 'Cachaca'.
+class ProductOptionGroup {
+  const ProductOptionGroup({
+    required this.id,
+    required this.name,
+    required this.required,
+    required this.choices,
+  });
+
+  final int id;
+  final String name;
+  final bool required;
+  final List<ProductOptionChoice> choices;
+
+  factory ProductOptionGroup.fromJson(Map<String, dynamic> json) {
+    return ProductOptionGroup(
+      id: json['id'] as int,
+      name: (json['name'] as String? ?? '').trim(),
+      required: json['required'] as bool? ?? true,
+      choices: ((json['choices'] as List<dynamic>?) ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(ProductOptionChoice.fromJson)
+          .toList(),
+    );
+  }
+}
+
+class ProductOptionChoice {
+  const ProductOptionChoice({
+    required this.id,
+    required this.name,
+    required this.priceDelta,
+  });
+
+  final int id;
+  final String name;
+
+  /// Quanto esta opcao soma (ou desconta) no preco do produto. O tablet usa
+  /// so para MOSTRAR: quem calcula o valor cobrado e o servidor.
+  final double priceDelta;
+
+  factory ProductOptionChoice.fromJson(Map<String, dynamic> json) {
+    return ProductOptionChoice(
+      id: json['id'] as int,
+      name: (json['name'] as String? ?? '').trim(),
+      priceDelta: double.tryParse('${json['price_delta'] ?? 0}') ?? 0,
     );
   }
 }

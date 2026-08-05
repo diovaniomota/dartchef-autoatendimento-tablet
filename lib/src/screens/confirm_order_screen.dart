@@ -333,6 +333,16 @@ class _OrderItemCard extends StatelessWidget {
               children: [
                 Text(item.product.name, maxLines: 2, overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                if (item.optionsLabel.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(item.optionsLabel, maxLines: 2, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w600)),
+                ],
+                if (item.notes.trim().isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(item.notes.trim(), maxLines: 3,
+                      style: const TextStyle(fontSize: 12, color: AppTheme.accent, fontWeight: FontWeight.w600)),
+                ],
                 if (item.product.brand.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(item.product.brand, maxLines: 1, overflow: TextOverflow.ellipsis,
@@ -361,7 +371,9 @@ class _OrderItemCard extends StatelessWidget {
               Text(currency.format(item.subtotal),
                   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
               const SizedBox(height: 2),
-              Text('${currency.format(item.product.price)} / un',
+              // Preco unitario COM a variacao: o cliente compara com o total
+              // da linha e a conta tem que fechar.
+              Text('${currency.format(item.unitPrice)} / un',
                   style: const TextStyle(fontSize: 11, color: AppTheme.textMuted)),
             ],
           ),

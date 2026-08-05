@@ -86,6 +86,11 @@ class TabletApiService {
                   // A API grava isto em restaurant_order_items.notes, que o PDV
                   // e a conferencia de conta ja exibem como "Obs:".
                   'notes': item.notes.trim(),
+                  // So os IDs: nome e preco da variacao vem do banco no
+                  // servidor. Mandar o preco daqui deixaria o tablet definir
+                  // quanto a mesa paga.
+                  'optionChoiceIds':
+                      item.chosenOptions.map((o) => o.id).toList(),
                 })
             .toList(),
       }),

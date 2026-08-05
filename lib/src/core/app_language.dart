@@ -113,6 +113,7 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'order.sent': 'Pedido #{id} enviado para a Mesa {code}!',
     'order.addFirst': 'Adicione itens antes de enviar.',
     'order.added': '{product} adicionado!',
+    'options.optional': 'opcional',
     'lang.label': 'Idioma',
   },
 
@@ -187,6 +188,7 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'order.sent': 'Order #{id} sent for Table {code}!',
     'order.addFirst': 'Add items before sending.',
     'order.added': '{product} added!',
+    'options.optional': 'optional',
     'lang.label': 'Language',
   },
 
@@ -261,6 +263,7 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'order.sent': '¡Pedido #{id} enviado a la Mesa {code}!',
     'order.addFirst': 'Añada artículos antes de enviar.',
     'order.added': '¡{product} añadido!',
+    'options.optional': 'opcional',
     'lang.label': 'Idioma',
   },
 };

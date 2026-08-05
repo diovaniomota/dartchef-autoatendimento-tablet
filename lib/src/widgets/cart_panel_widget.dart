@@ -205,6 +205,7 @@ class _CartItemRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final notes = item.notes.trim();
+    final options = item.optionsLabel;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
@@ -217,6 +218,19 @@ class _CartItemRow extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white),
           ),
+
+          // Variacao escolhida ("Vodka") logo abaixo do nome, em tom neutro:
+          // e parte da identidade do item, nao um pedido especial. A
+          // observacao, essa sim, fica destacada em seguida.
+          if (options.isNotEmpty) ...[
+            const SizedBox(height: 2),
+            Text(
+              options,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 12, color: AppTheme.textMuted, fontWeight: FontWeight.w600),
+            ),
+          ],
 
           // Observacao aparece logo abaixo do nome: e o que o cliente precisa
           // conferir antes de confirmar o pedido.
