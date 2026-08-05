@@ -78,12 +78,19 @@ class _OrderConfirmScreenState extends State<OrderConfirmScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _resumo(),
-                      const SizedBox(height: 14),
-                      _dadosDoCliente(),
-                      const SizedBox(height: 14),
-                      _secao(t('confirm.payment')),
-                      const SizedBox(height: 8),
-                      _formasDePagamento(),
+                      const SizedBox(height: 12),
+                      _painel(child: _dadosDoCliente()),
+                      const SizedBox(height: 12),
+                      _painel(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _secao(t('confirm.payment')),
+                            const SizedBox(height: 10),
+                            _formasDePagamento(),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -96,6 +103,20 @@ class _OrderConfirmScreenState extends State<OrderConfirmScreen> {
     );
   }
 
+  /// Cada bloco num painel proprio, como na referencia: itens, dados e
+  /// pagamento sao tres decisoes distintas, e soltos na tela viravam uma coluna
+  /// unica sem hierarquia.
+  Widget _painel({required Widget child}) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white12),
+        ),
+        child: child,
+      );
+
   Widget _secao(String texto) => Text(
         texto,
         style: const TextStyle(
@@ -107,18 +128,43 @@ class _OrderConfirmScreenState extends State<OrderConfirmScreen> {
       );
 
   Widget _resumo() => Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: AppTheme.surface,
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.white12),
         ),
         child: Column(
           children: [
             for (final item in widget.cart)
               Padding(
-                padding: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.only(bottom: 10),
                 child: Row(
                   children: [
+                    // Foto na conferencia tambem: e a ultima tela antes de a
+                    // cozinha receber, e reconhecer pelo prato e mais rapido que
+                    // ler o nome do cadastro, que muitas vezes vem com codigo.
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: SizedBox(
+                        width: 74,
+                        height: 56,
+                        child: (item.product.imageUrl ?? '').isEmpty
+                            ? const ColoredBox(
+                                color: AppTheme.surfaceHigh,
+                                child: Icon(Icons.restaurant, color: AppTheme.textMuted, size: 18),
+                              )
+                            : Image.network(
+                                item.product.imageUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, _, _) => const ColoredBox(
+                                  color: AppTheme.surfaceHigh,
+                                  child: Icon(Icons.restaurant, color: AppTheme.textMuted, size: 18),
+                                ),
+                              ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
                     SizedBox(
                       width: 42,
                       child: Text(

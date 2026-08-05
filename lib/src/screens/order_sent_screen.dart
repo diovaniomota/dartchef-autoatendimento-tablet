@@ -76,8 +76,10 @@ class OrderSentScreen extends StatelessWidget {
                     Text(
                       '#$numero',
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 64,
+                        // Laranja e nao branco: e o unico dado da tela que o
+                        // cliente precisa guardar, e branco o igualava ao resto.
+                        color: AppTheme.accent,
+                        fontSize: 72,
                         fontWeight: FontWeight.w900,
                         height: 1.1,
                       ),

@@ -109,7 +109,10 @@ class _CartScreenState extends State<CartScreen> {
           children: [
             TabletBarButton(icone: Icons.arrow_back, texto: t('nav.back'), onTap: widget.onBack),
             Expanded(
-              child: Center(
+              child: Align(
+                // Titulo colado no VOLTAR, como na referencia: centralizado ele
+                // brigava com a lixeira pelo eixo da tela.
+                alignment: Alignment.centerLeft,
                 child: Text(
                   t('cart.summary'),
                   style: const TextStyle(
@@ -180,13 +183,18 @@ class _CartScreenState extends State<CartScreen> {
         ),
         child: Column(
           children: [
+            // Subtotal e observacoes no MESMO painel, como na referencia: sao a
+            // conferencia final, e separados pareciam dois assuntos.
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppTheme.background,
-                borderRadius: BorderRadius.circular(10),
+                color: AppTheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white12),
               ),
-              child: Row(
+              child: Column(
+                children: [
+              Row(
                 children: [
                   Text(
                     t('cart.subtotal').toUpperCase(),
@@ -202,15 +210,14 @@ class _CartScreenState extends State<CartScreen> {
                     widget.currency.format(widget.subtotal),
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 20,
+                      fontSize: 22,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
+              const Divider(color: AppTheme.border, height: 22),
+              TextField(
               controller: _notas,
               maxLength: 240,
               maxLines: 2,
@@ -236,6 +243,9 @@ class _CartScreenState extends State<CartScreen> {
                   borderRadius: BorderRadius.circular(10),
                   borderSide: const BorderSide(color: AppTheme.accent, width: 2),
                 ),
+              ),
+              ),
+                ],
               ),
             ),
             const SizedBox(height: 10),
@@ -316,18 +326,19 @@ class _LinhaCarrinho extends StatelessWidget {
     final obs = item.notes.trim();
 
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: AppTheme.surface,
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white12),
       ),
       child: Row(
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: SizedBox(
-              width: 62,
-              height: 62,
+              width: 104,
+              height: 84,
               child: url.isEmpty
                   ? const ColoredBox(
                       color: AppTheme.surfaceHigh,
@@ -355,7 +366,7 @@ class _LinhaCarrinho extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: Colors.white,
-                    fontSize: 15,
+                    fontSize: 18,
                     fontWeight: FontWeight.w900,
                     height: 1.15,
                   ),
@@ -379,19 +390,28 @@ class _LinhaCarrinho extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   currency.format(item.unitPrice),
-                  style: const TextStyle(color: Colors.white70, fontSize: 13.5, fontWeight: FontWeight.w700),
+                  style: const TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w700),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 8),
           _Passo(icone: Icons.remove, onTap: onDecrement),
+          // Numero tambem em caixa, como na referencia: os tres formam um
+          // controle so, em vez de dois botoes com um texto solto no meio.
           Container(
-            width: 42,
+            width: 54,
+            height: 46,
+            margin: const EdgeInsets.symmetric(horizontal: 6),
             alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppTheme.background,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppTheme.border),
+            ),
             child: Text(
               '${item.quantity}',
-              style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900),
+              style: const TextStyle(color: Colors.white, fontSize: 19, fontWeight: FontWeight.w900),
             ),
           ),
           _Passo(icone: Icons.add, onTap: onIncrement),
@@ -416,13 +436,13 @@ class _Passo extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
         child: Container(
-          width: 42,
-          height: 42,
+          width: 46,
+          height: 46,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppTheme.accent),
+            border: Border.all(color: AppTheme.border),
           ),
-          child: Icon(icone, color: AppTheme.accent, size: 20),
+          child: Icon(icone, color: AppTheme.accent, size: 22),
         ),
       ),
     );

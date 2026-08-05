@@ -431,10 +431,15 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
         title: const Text('Configurar tablet'),
         content: SizedBox(
           // Largura acompanha a tela: 460 fixo estourava no tablet de 7".
-        width: MediaQuery.of(context).size.width * 0.7,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+          width: MediaQuery.of(context).size.width * 0.7,
+          // Rolagem no conteudo: a altura do dialogo e limitada pela tela e a
+          // soma dos campos passava dela por poucos pixels — o bastante para a
+          // faixa listrada de estouro aparecer no lugar dos botoes. Com o
+          // teclado aberto a sobra e ainda menor.
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -481,7 +486,8 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
                   style: OutlinedButton.styleFrom(foregroundColor: AppTheme.textMuted, side: const BorderSide(color: AppTheme.border)),
                 ),
               ),
-            ],
+              ],
+            ),
           ),
         ),
         actionsAlignment: MainAxisAlignment.spaceBetween,
