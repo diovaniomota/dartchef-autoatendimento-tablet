@@ -29,6 +29,8 @@ class CategoriesScreen extends StatelessWidget {
     required this.onSearchTap,
     required this.onCartTap,
     required this.onHomeTap,
+    this.onCallWaiter,
+    this.onRequestBill,
   });
 
   final List<String> categories;
@@ -43,6 +45,8 @@ class CategoriesScreen extends StatelessWidget {
   final VoidCallback onSearchTap;
   final VoidCallback onCartTap;
   final VoidCallback onHomeTap;
+  final VoidCallback? onCallWaiter;
+  final VoidCallback? onRequestBill;
 
   /// TODAS as fotos da categoria, na ordem do cardapio.
   ///
@@ -106,6 +110,8 @@ class CategoriesScreen extends StatelessWidget {
                 cartItemCount: cartItemCount,
                 onHomeTap: onHomeTap,
                 onCartTap: onCartTap,
+                onCallWaiter: onCallWaiter,
+                onRequestBill: onRequestBill,
               ),
             ],
           ),

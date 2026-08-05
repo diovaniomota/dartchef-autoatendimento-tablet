@@ -158,6 +158,8 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'sent.estimate': 'Tempo aproximado: {minutes} minutos',
     'sent.thanks': 'Obrigado pela preferência!',
     'sent.follow': 'ACOMPANHAR PEDIDO',
+    'error.menuTitle': 'Não foi possível carregar o cardápio',
+    'error.retry': 'TENTAR NOVAMENTE',
     'lang.label': 'Idioma',
   },
 
@@ -273,6 +275,8 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'sent.estimate': 'Approximate time: {minutes} minutes',
     'sent.thanks': 'Thank you!',
     'sent.follow': 'TRACK ORDER',
+    'error.menuTitle': 'Could not load the menu',
+    'error.retry': 'TRY AGAIN',
     'lang.label': 'Language',
   },
 
@@ -388,6 +392,8 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'sent.estimate': 'Tiempo aproximado: {minutes} minutos',
     'sent.thanks': '¡Gracias por su preferencia!',
     'sent.follow': 'SEGUIR PEDIDO',
+    'error.menuTitle': 'No se pudo cargar el menú',
+    'error.retry': 'REINTENTAR',
     'lang.label': 'Idioma',
   },
 };

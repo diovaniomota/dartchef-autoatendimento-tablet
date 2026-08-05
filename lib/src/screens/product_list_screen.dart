@@ -21,6 +21,8 @@ class ProductListScreen extends StatelessWidget {
     required this.cartItemCount,
     required this.onBack,
     required this.onHomeTap,
+    this.onCallWaiter,
+    this.onRequestBill,
     required this.onCartTap,
     required this.onProductTap,
     required this.onQuickAdd,
@@ -32,6 +34,8 @@ class ProductListScreen extends StatelessWidget {
   final int cartItemCount;
   final VoidCallback onBack;
   final VoidCallback onHomeTap;
+  final VoidCallback? onCallWaiter;
+  final VoidCallback? onRequestBill;
   final VoidCallback onCartTap;
   final ValueChanged<MenuProduct> onProductTap;
 
@@ -79,6 +83,8 @@ class ProductListScreen extends StatelessWidget {
                 cartItemCount: cartItemCount,
                 onHomeTap: onHomeTap,
                 onCartTap: onCartTap,
+                onCallWaiter: onCallWaiter,
+                onRequestBill: onRequestBill,
               ),
             ],
           ),

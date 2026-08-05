@@ -117,11 +117,22 @@ class TabletBottomBar extends StatelessWidget {
     required this.cartItemCount,
     required this.onHomeTap,
     required this.onCartTap,
+    this.onCallWaiter,
+    this.onRequestBill,
   });
 
   final int cartItemCount;
   final VoidCallback onHomeTap;
   final VoidCallback onCartTap;
+
+  /// Chamar garcom e pedir a conta.
+  ///
+  /// Ficam no rodape porque sao o socorro do cliente: precisam estar visiveis
+  /// em qualquer ponto do cardapio, sem ele ter de procurar. Sairam junto com o
+  /// layout antigo e voltaram aqui — o tablet existe justamente para a mesa nao
+  /// precisar acenar para ninguem.
+  final VoidCallback? onCallWaiter;
+  final VoidCallback? onRequestBill;
 
   @override
   Widget build(BuildContext context) {
@@ -140,6 +151,18 @@ class TabletBottomBar extends StatelessWidget {
             texto: t('nav.home'),
             onTap: onHomeTap,
           ),
+          if (onCallWaiter != null)
+            TabletBarButton(
+              icone: Icons.room_service_outlined,
+              texto: t('topbar.waiter'),
+              onTap: onCallWaiter!,
+            ),
+          if (onRequestBill != null)
+            TabletBarButton(
+              icone: Icons.receipt_long_outlined,
+              texto: t('topbar.requestBill'),
+              onTap: onRequestBill!,
+            ),
           const Spacer(),
           SizedBox(
             height: 52,
