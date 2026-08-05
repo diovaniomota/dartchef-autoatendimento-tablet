@@ -85,7 +85,7 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'confirm.destination': 'O pedido será enviado para a cozinha vinculado à Mesa {code}.',
 
     'notes.title': 'Observação — {product}',
-    'notes.help': 'Toque em uma sugestão ou escreva o que precisar. A cozinha recebe junto com o pedido.',
+    'notes.help': 'Escreva o que precisar. A cozinha recebe junto com o pedido.',
     'notes.hint': 'Ex.: sem salada, bebida com gelo',
     'notes.save': 'Salvar',
     'notes.cancel': 'Cancelar',
@@ -159,7 +159,7 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'confirm.destination': 'The order will be sent to the kitchen for Table {code}.',
 
     'notes.title': 'Note — {product}',
-    'notes.help': 'Tap a suggestion or type what you need. The kitchen gets it with your order.',
+    'notes.help': 'Type what you need. The kitchen gets it with your order.',
     'notes.hint': 'E.g. no salad, drink with ice',
     'notes.save': 'Save',
     'notes.cancel': 'Cancel',
@@ -233,7 +233,7 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'confirm.destination': 'El pedido se enviará a la cocina vinculado a la Mesa {code}.',
 
     'notes.title': 'Nota — {product}',
-    'notes.help': 'Toque una sugerencia o escriba lo que necesite. La cocina lo recibe con su pedido.',
+    'notes.help': 'Escriba lo que necesite. La cocina lo recibe con su pedido.',
     'notes.hint': 'Ej.: sin ensalada, bebida con hielo',
     'notes.save': 'Guardar',
     'notes.cancel': 'Cancelar',

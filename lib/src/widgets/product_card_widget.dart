@@ -79,7 +79,18 @@ class ProductCardWidget extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white, height: 1.3),
                     ),
-                    if (product.brand.isNotEmpty) ...[
+                    // Descricao cadastrada pelo restaurante tem prioridade
+                    // sobre a marca: e ela que diz o que vem no prato, que e o
+                    // que o cliente precisa para decidir.
+                    if (product.description.isNotEmpty) ...[
+                      const SizedBox(height: 5),
+                      Text(
+                        product.description,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary, height: 1.45),
+                      ),
+                    ] else if (product.brand.isNotEmpty) ...[
                       const SizedBox(height: 5),
                       Text(
                         product.brand,

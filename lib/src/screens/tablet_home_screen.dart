@@ -267,7 +267,8 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
         backgroundColor: AppTheme.surface,
         title: const Text('Configurar tablet'),
         content: SizedBox(
-          width: 460,
+          // Largura acompanha a tela: 460 fixo estourava no tablet de 7".
+        width: MediaQuery.of(context).size.width * 0.7,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1436,21 +1437,9 @@ class _ItemNotesDialog extends StatefulWidget {
 }
 
 class _ItemNotesDialogState extends State<_ItemNotesDialog> {
-  // Traduzidas no idioma escolhido pelo cliente: a observacao vai literal para
-  // a cozinha, entao um turista escreveria "No salad" e o cozinheiro brasileiro
-  // teria que adivinhar. Aqui pelo menos as opcoes comuns saem padronizadas.
-  static List<String> get _suggestions => [
-        t('notes.noSalad'),
-        t('notes.noOnion'),
-        t('notes.noTomato'),
-        t('notes.noMayo'),
-        t('notes.withIce'),
-        t('notes.noIce'),
-        t('notes.wellDone'),
-        t('notes.lessSalt'),
-        t('notes.toShare'),
-      ];
-
+  // As sugestoes prontas foram removidas: num tablet de 7" as opcoes ocupavam a
+  // tela inteira e EMPURRAVAM o campo de digitar para fora, deixando o cliente
+  // sem conseguir escrever. Campo livre resolve e cabe em qualquer tamanho.
   late final TextEditingController _controller =
       TextEditingController(text: widget.initialNotes);
 
@@ -1458,17 +1447,6 @@ class _ItemNotesDialogState extends State<_ItemNotesDialog> {
   void dispose() {
     _controller.dispose();
     super.dispose();
-  }
-
-  /// Acrescenta a sugestao ao que ja existe, em vez de substituir: o cliente
-  /// pode querer "Sem cebola" E "Sem tomate".
-  void _append(String suggestion) {
-    final current = _controller.text.trim();
-    if (current.toLowerCase().contains(suggestion.toLowerCase())) return;
-    setState(() {
-      _controller.text = current.isEmpty ? suggestion : '$current, $suggestion';
-      _controller.selection = TextSelection.collapsed(offset: _controller.text.length);
-    });
   }
 
   @override
@@ -1491,35 +1469,14 @@ class _ItemNotesDialogState extends State<_ItemNotesDialog> {
               style: const TextStyle(color: AppTheme.textMuted, fontSize: 13, height: 1.4),
             ),
             const SizedBox(height: 14),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _suggestions
-                  .map((s) => Material(
-                        color: AppTheme.surfaceHigh,
-                        borderRadius: BorderRadius.circular(20),
-                        child: InkWell(
-                          onTap: () => _append(s),
-                          borderRadius: BorderRadius.circular(20),
-                          child: Container(
-                            constraints: const BoxConstraints(minHeight: 44),
-                            padding: const EdgeInsets.symmetric(horizontal: 14),
-                            alignment: Alignment.center,
-                            child: Text(s,
-                                style: const TextStyle(
-                                    color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
-                          ),
-                        ),
-                      ))
-                  .toList(),
-            ),
             const SizedBox(height: 16),
             TextField(
               controller: _controller,
-              autofocus: false,
+              // Teclado abre direto: sem as sugestoes, digitar e a unica acao.
+              autofocus: true,
               maxLength: 200,
-              maxLines: 3,
-              minLines: 2,
+              maxLines: 4,
+              minLines: 3,
               style: const TextStyle(color: Colors.white, fontSize: 15),
               decoration: InputDecoration(
                 hintText: t('notes.hint'),
