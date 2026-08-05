@@ -87,6 +87,9 @@ class TabletTopBar extends StatelessWidget {
             icone: Icons.shopping_cart_outlined,
             texto: t('nav.cart'),
             contador: cartItemCount,
+            // Sempre visivel, igual ao do rodape: sao o mesmo contador em dois
+            // lugares, e um aparecendo com zero e o outro nao confundiria.
+            contadorSempre: true,
             onTap: onCartTap,
           ),
         ],
@@ -188,12 +191,14 @@ class TabletBarButton extends StatelessWidget {
     required this.texto,
     required this.onTap,
     this.contador = 0,
+    this.contadorSempre = false,
   });
 
   final IconData icone;
   final String texto;
   final VoidCallback onTap;
   final int contador;
+  final bool contadorSempre;
 
   @override
   Widget build(BuildContext context) {
@@ -219,9 +224,9 @@ class TabletBarButton extends StatelessWidget {
                   letterSpacing: 0.4,
                 ),
               ),
-              if (contador > 0) ...[
+              if (contador > 0 || contadorSempre) ...[
                 const SizedBox(width: 6),
-                _Contador(valor: contador, cor: AppTheme.accent),
+                _Contador(valor: contador, cor: AppTheme.accent, sempreVisivel: contadorSempre),
               ],
             ],
           ),

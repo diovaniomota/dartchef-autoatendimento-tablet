@@ -134,9 +134,9 @@ class CategoriesScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.4,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
                 ),
               ),
             ),
@@ -219,10 +219,13 @@ class _CartaoCategoriaState extends State<_CartaoCategoria> {
       child: InkWell(
         onTap: widget.onTap,
         borderRadius: BorderRadius.circular(14),
-        child: Container(
-          // A que sobra sozinha na fileira fica um pouco mais baixa: ocupando a
-          // largura toda com a mesma altura, ela dominaria a tela.
-          height: widget.alturaMenor ? 124 : 152,
+        child: AspectRatio(
+          // Proporcao e nao altura fixa: com altura em pixels o cartao ficava
+          // quadrado no tablet pequeno e achatado no grande. A referencia tem
+          // cerca de 2:1 nos cartoes de meia largura; o que ocupa a linha
+          // inteira fica mais alongado para nao dominar a tela.
+          aspectRatio: widget.alturaMenor ? 3.3 : 2.0,
+          child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
             // Contorno claro, como na referencia: sem ele o cartao se dissolve
@@ -292,6 +295,7 @@ class _CartaoCategoriaState extends State<_CartaoCategoria> {
                 ),
               ],
             ),
+          ),
           ),
         ),
       ),
