@@ -62,11 +62,13 @@ class TabletApiService {
     return TableMenu.fromJson(payload);
   }
 
-  Future<int> submitOrder({
+  /// Resultado do envio: o que a tela de "pedido enviado" precisa mostrar.
+  Future<SubmittedOrder> submitOrder({
     required TabletSettings settings,
     required List<CartItem> items,
     required String customerName,
     required String notes,
+    required String paymentMethod,
   }) async {
     final baseUrl = _normalizeBaseUrl(settings.apiBaseUrl);
     final uri = Uri.parse('$baseUrl/api/public/orders');
@@ -79,6 +81,9 @@ class TabletApiService {
         'tableCode': settings.tableCode,
         'customerName': customerName.trim(),
         'notes': notes.trim(),
+        // Intencao de pagamento. O servidor descarta valor fora da lista, entao
+        // vazio aqui simplesmente nao registra nada.
+        'paymentMethod': paymentMethod,
         'items': items
             .map((item) => {
                   'productId': item.product.id,
@@ -105,7 +110,7 @@ class TabletApiService {
     }
 
     final order = payload['order'] as Map<String, dynamic>? ?? {};
-    return int.tryParse('${order['id'] ?? 0}') ?? 0;
+    return SubmittedOrder.fromJson(order);
   }
 
   /// Chama garçom, vallet ou pede a conta
@@ -152,5 +157,33 @@ class TabletApiService {
 
     final orders = payload['orders'] as List<dynamic>? ?? [];
     return orders.cast<Map<String, dynamic>>();
+  }
+}
+
+/// Pedido aceito pelo servidor.
+class SubmittedOrder {
+  const SubmittedOrder({
+    required this.id,
+    required this.numero,
+    required this.minutosEstimados,
+  });
+
+  final int id;
+
+  /// Numero curto, o que o cliente le na tela e diz em voz alta. Vem do
+  /// servidor para bater com o que a cozinha ve — nao e calculado aqui.
+  final int numero;
+
+  final int minutosEstimados;
+
+  factory SubmittedOrder.fromJson(Map<String, dynamic> json) {
+    final id = int.tryParse('${json['id'] ?? 0}') ?? 0;
+    return SubmittedOrder(
+      id: id,
+      // Servidor em versao anterior nao manda numero: cai no id, que e o que
+      // existia antes, em vez de mostrar zero na tela.
+      numero: int.tryParse('${json['numero'] ?? ''}') ?? id,
+      minutosEstimados: int.tryParse('${json['minutos_estimados'] ?? ''}') ?? 0,
+    );
   }
 }

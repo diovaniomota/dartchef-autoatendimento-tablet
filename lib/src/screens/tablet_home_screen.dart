@@ -25,12 +25,14 @@ import 'confirm_order_screen.dart';
 import 'qr_scanner_screen.dart';
 import 'cart_screen.dart';
 import 'categories_screen.dart';
+import 'order_confirm_screen.dart';
+import 'order_sent_screen.dart';
 import 'product_detail_screen.dart';
 import 'product_list_screen.dart';
 import 'welcome_screen.dart';
 
 /// Etapas do fluxo de pedido, na ordem em que o cliente as ve.
-enum _Estagio { categorias, produtos, detalhe, carrinho }
+enum _Estagio { categorias, produtos, detalhe, carrinho, confirmacao, enviado }
 
 class TabletHomeScreen extends StatefulWidget {
   const TabletHomeScreen({super.key});
@@ -83,6 +85,9 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
 
   /// Produto aberto na TELA 4.
   MenuProduct? _produtoAberto;
+
+  /// Pedido aceito pelo servidor, exibido na tela de "pedido enviado".
+  SubmittedOrder? _pedidoEnviado;
 
   /// Alguma consulta JA viu comanda aberta nesta sessao.
   ///
@@ -172,6 +177,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
       _estagio = _Estagio.categorias;
       _categoriaAberta = '';
       _produtoAberto = null;
+      _pedidoEnviado = null;
       _cart = [];
       _showCart = false;
       _searchTerm = '';
@@ -978,12 +984,12 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
       builder: (_) => ConfirmOrderScreen(
         cart: _cart,
         tableCode: _settings?.tableCode ?? '--',
-        onConfirm: _submitOrder,
+        onConfirm: _enviarPedido,
       ),
     ));
   }
 
-  Future<void> _submitOrder() async {
+  Future<void> _enviarPedido([PaymentMethod? forma]) async {
     // Rede de seguranca final contra pedido duplicado: vale para TODOS os
     // caminhos (duplo toque, telas empilhadas, dois botoes no mesmo frame).
     // _sendingOrder e ligado de forma sincrona logo abaixo e desligado no
@@ -998,11 +1004,12 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
     // no cenario de comanda individual por pessoa — descartado pelo cliente.
     setState(() => _sendingOrder = true);
     try {
-      final orderId = await _apiService.submitOrder(
+      final pedido = await _apiService.submitOrder(
         settings: settings,
         items: _cart,
         customerName: _customerNameController.text,
         notes: _notesController.text,
+        paymentMethod: forma?.name ?? '',
       );
       if (!mounted) return;
       setState(() {
@@ -1010,11 +1017,14 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
         _customerNameController.clear();
         _notesController.clear();
         _showCart = false;
+        _pedidoEnviado = pedido;
+        _estagio = _Estagio.enviado;
       });
-      // Tablet e compartilhado: sem isto, um turista escolhe ingles, vai
-      // embora, e o proximo cliente encontra a tela em outro idioma.
-      resetLanguage();
-      _showMsg(t2('order.sent', {'id': '$orderId', 'code': settings.tableCode}));
+
+      // O idioma NAO volta ao portugues aqui, ao contrario da versao anterior.
+      // Quem acabou de pedir costuma pedir mais, e trocar a tela para outro
+      // idioma no meio da refeicao e pior que esperar o fim da sessao — o
+      // encerramento (mesa paga ou ociosidade) ja cuida disso.
     } on TabletApiException catch (e) {
       _showMsg(e.message, isError: true);
     } catch (_) {
@@ -1438,6 +1448,37 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
           ),
         );
 
+      case _Estagio.confirmacao:
+        return PopScope(
+          canPop: false,
+          child: OrderConfirmScreen(
+            cart: _cart,
+            currency: _currency,
+            subtotal: _cartTotal,
+            tableCode: _settings?.tableCode ?? '--',
+            cartItemCount: _cartItemCount,
+            sendingOrder: _sendingOrder,
+            nomeInicial: _customerNameController.text,
+            onBack: () => _irPara(_Estagio.carrinho),
+            onSend: (nome, forma) {
+              _customerNameController.text = nome;
+              unawaited(_enviarPedido(forma));
+            },
+          ),
+        );
+
+      case _Estagio.enviado:
+        final pedido = _pedidoEnviado;
+        if (pedido == null) return _telaAntiga();
+        return PopScope(
+          canPop: false,
+          child: OrderSentScreen(
+            numero: pedido.numero,
+            minutosEstimados: pedido.minutosEstimados,
+            onFollow: _showMyOrders,
+          ),
+        );
+
       case _Estagio.carrinho:
         return PopScope(
           canPop: false,
@@ -1456,7 +1497,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
             onClear: () => setState(() => _cart = []),
             onFinish: (notas) {
               _notesController.text = notas;
-              _openConfirmScreen();
+              _irPara(_Estagio.confirmacao);
             },
           ),
         );
