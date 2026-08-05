@@ -22,6 +22,7 @@ class WelcomeScreen extends StatelessWidget {
     required this.backgroundUrl,
     required this.primaryColor,
     required this.onStart,
+    required this.onSettings,
   });
 
   final String restaurantName;
@@ -33,6 +34,13 @@ class WelcomeScreen extends StatelessWidget {
   final String primaryColor;
 
   final VoidCallback onStart;
+
+  /// Acesso as configuracoes do tablet, protegido por PIN.
+  ///
+  /// Precisa estar AQUI: esta tela cobre o app inteiro enquanto a mesa esta
+  /// livre, e sem a engrenagem nao haveria como parear o tablet ou trocar a
+  /// mesa — o unico caminho ficava atras de um cardapio que ainda nao carregou.
+  final VoidCallback onSettings;
 
   Color get _accent {
     final hex = primaryColor.replaceAll('#', '').trim();
@@ -73,6 +81,22 @@ class WelcomeScreen extends StatelessWidget {
                 ),
               ),
               child: SizedBox.expand(),
+            ),
+
+            // Discreta no canto: e para o operador, nao para o cliente. Fica
+            // sobre o conteudo para nao empurrar a marca nem os idiomas.
+            Positioned(
+              left: 4,
+              bottom: 4,
+              child: SafeArea(
+                child: IconButton(
+                  onPressed: onSettings,
+                  tooltip: t('settings.tooltip'),
+                  iconSize: 22,
+                  constraints: const BoxConstraints(minWidth: 52, minHeight: 52),
+                  icon: const Icon(Icons.settings, color: Colors.white24),
+                ),
+              ),
             ),
 
             SafeArea(

@@ -23,7 +23,14 @@ import '../widgets/sidebar_widget.dart';
 import '../widgets/top_bar_widget.dart';
 import 'confirm_order_screen.dart';
 import 'qr_scanner_screen.dart';
+import 'cart_screen.dart';
+import 'categories_screen.dart';
+import 'product_detail_screen.dart';
+import 'product_list_screen.dart';
 import 'welcome_screen.dart';
+
+/// Etapas do fluxo de pedido, na ordem em que o cliente as ve.
+enum _Estagio { categorias, produtos, detalhe, carrinho }
 
 class TabletHomeScreen extends StatefulWidget {
   const TabletHomeScreen({super.key});
@@ -61,6 +68,21 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
   // false = tela de espera. Vira true quando alguem toca em "comecar", e volta
   // para false quando a mesa e paga/cancelada no PDV ou apos um tempo sem toque.
   bool _sessionActive = false;
+
+  /// Onde o cliente esta dentro do fluxo.
+  ///
+  /// Estagio e nao rota do Navigator de proposito: a sessao da mesa e encerrada
+  /// por ociosidade e por pagamento, e para isso o codigo precisa distinguir
+  /// "cliente navegando" de "operador dentro de um dialogo". Se cada tela fosse
+  /// uma rota, `_temRotaAcima()` daria verdadeiro o tempo todo e a mesa nunca
+  /// seria liberada.
+  _Estagio _estagio = _Estagio.categorias;
+
+  /// Categoria aberta na TELA 3.
+  String _categoriaAberta = '';
+
+  /// Produto aberto na TELA 4.
+  MenuProduct? _produtoAberto;
 
   /// Alguma consulta JA viu comanda aberta nesta sessao.
   ///
@@ -103,7 +125,12 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
   // ──────────────────── Sessao da mesa ────────────────────
 
   void _startSession() {
-    setState(() => _sessionActive = true);
+    setState(() {
+      _sessionActive = true;
+      _estagio = _Estagio.categorias;
+      _categoriaAberta = '';
+      _produtoAberto = null;
+    });
     _sawOpenOrder = false;
     userActivity.ping();
     _startIdleWatch();
@@ -142,6 +169,9 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
     if (!mounted) return;
     setState(() {
       _sessionActive = false;
+      _estagio = _Estagio.categorias;
+      _categoriaAberta = '';
+      _produtoAberto = null;
       _cart = [];
       _showCart = false;
       _searchTerm = '';
@@ -1236,6 +1266,93 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
     return others.take(3).toList();
   }
 
+  // ──────────────────── Fluxo das telas ────────────────────
+
+  void _abrirCategoria(String categoria) {
+    setState(() {
+      _categoriaAberta = categoria;
+      _activeCategory = categoria;
+      _estagio = _Estagio.produtos;
+    });
+  }
+
+  void _abrirProduto(MenuProduct produto) {
+    setState(() {
+      _produtoAberto = produto;
+      _estagio = _Estagio.detalhe;
+    });
+  }
+
+  void _irPara(_Estagio destino) => setState(() => _estagio = destino);
+
+  List<MenuProduct> _produtosDaCategoria(String categoria) =>
+      (_menu?.products ?? []).where((p) => p.category == categoria).toList();
+
+  /// Adiciona direto da lista, sem abrir o detalhe.
+  ///
+  /// Produto com variacao obrigatoria NAO entra por aqui: sem a escolha o bar
+  /// nao sabe o que preparar, entao o toque leva ao detalhe em vez de adicionar
+  /// algo incompleto.
+  void _adicaoRapida(MenuProduct produto) {
+    final exigeEscolha = produto.optionGroups.any((grupo) => grupo.required);
+    if (exigeEscolha) {
+      _abrirProduto(produto);
+      return;
+    }
+    _adicionarAoCarrinho(produto, 1, const [], '');
+  }
+
+  void _adicionarAoCarrinho(
+    MenuProduct produto,
+    int quantidade,
+    List<ProductOptionChoice> escolhas,
+    String observacao,
+  ) {
+    final obs = observacao.trim();
+    setState(() {
+      // Soma com a linha do MESMO produto, mesma observacao e mesmas variacoes.
+      // Sem isso, uma caipira de vodka viraria "2x" junto com uma de cachaca e o
+      // bar prepararia duas iguais.
+      final idx = _cart.indexWhere((i) => i.matchesWithOptions(produto, obs, escolhas));
+      if (idx >= 0) {
+        final atualizado = [..._cart];
+        atualizado[idx] = _cart[idx].copyWith(quantity: _cart[idx].quantity + quantidade);
+        _cart = atualizado;
+      } else {
+        _cart = [
+          ..._cart,
+          CartItem(
+            product: produto,
+            quantity: quantidade,
+            notes: obs,
+            chosenOptions: escolhas,
+          ),
+        ];
+      }
+      // Volta para a lista da categoria: o cliente costuma pedir mais de um item
+      // do mesmo grupo, e cair no carrinho a cada adicao obrigaria a voltar.
+      if (_estagio == _Estagio.detalhe) _estagio = _Estagio.produtos;
+    });
+    _showMsg(t2('order.added', {'product': produto.name}));
+  }
+
+  void _mudarQuantidade(int indice, int delta) {
+    if (indice < 0 || indice >= _cart.length) return;
+    setState(() {
+      final atual = _cart[indice];
+      final nova = atual.quantity + delta;
+      if (nova <= 0) {
+        // Chegar a zero remove a linha: e o que o cliente espera ao apertar "-"
+        // no ultimo, e evita item fantasma com quantidade zero na comanda.
+        _cart = [..._cart]..removeAt(indice);
+        return;
+      }
+      final atualizado = [..._cart];
+      atualizado[indice] = atual.copyWith(quantity: nova);
+      _cart = atualizado;
+    });
+  }
+
   // ──────────────────── Build ────────────────────
 
   @override
@@ -1257,16 +1374,104 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
       return PopScope(
         canPop: false,
         child: WelcomeScreen(
-          restaurantName: _menu?.organizationName
-              ?? _settings?.organizationName
-              ?? 'DartChef',
+          restaurantName: _nomeDoRestaurante,
           logoUrl: _menu?.logoUrl ?? '',
           backgroundUrl: _menu?.backgroundUrl ?? '',
           primaryColor: _menu?.primaryColor ?? '',
           onStart: _startSession,
+          onSettings: _requestSettingsAccess,
         ),
       );
     }
+
+    // Cardapio que nao carregou: mostra o motivo em vez de uma grade vazia sem
+    // explicacao. Cai no layout antigo, que ja traz o diagnostico do pareamento
+    // e o caminho para as configuracoes.
+    if (_menu == null) return _telaAntiga();
+
+    switch (_estagio) {
+      case _Estagio.categorias:
+        return PopScope(
+          canPop: false,
+          child: CategoriesScreen(
+            categories: _menu!.categories,
+            products: _menu!.products,
+            logoUrl: _menu!.logoUrl,
+            restaurantName: _nomeDoRestaurante,
+            cartItemCount: _cartItemCount,
+            onCategorySelected: _abrirCategoria,
+            onSearchTap: _showMyOrders,
+            onCartTap: () => _irPara(_Estagio.carrinho),
+            onHomeTap: _endSession,
+          ),
+        );
+
+      case _Estagio.produtos:
+        return PopScope(
+          canPop: false,
+          child: ProductListScreen(
+            categoryName: _categoriaAberta,
+            products: _produtosDaCategoria(_categoriaAberta),
+            currency: _currency,
+            cartItemCount: _cartItemCount,
+            onBack: () => _irPara(_Estagio.categorias),
+            onHomeTap: () => _irPara(_Estagio.categorias),
+            onCartTap: () => _irPara(_Estagio.carrinho),
+            onProductTap: _abrirProduto,
+            onQuickAdd: _adicaoRapida,
+          ),
+        );
+
+      case _Estagio.detalhe:
+        final produto = _produtoAberto;
+        if (produto == null) return _telaAntiga();
+        return PopScope(
+          canPop: false,
+          child: ProductDetailScreen(
+            produto: produto,
+            currency: _currency,
+            cartItemCount: _cartItemCount,
+            onBack: () => _irPara(_Estagio.produtos),
+            onCartTap: () => _irPara(_Estagio.carrinho),
+            onAdd: (quantidade, escolhas, observacao) =>
+                _adicionarAoCarrinho(produto, quantidade, escolhas, observacao),
+          ),
+        );
+
+      case _Estagio.carrinho:
+        return PopScope(
+          canPop: false,
+          child: CartScreen(
+            cart: _cart,
+            currency: _currency,
+            subtotal: _cartTotal,
+            cartItemCount: _cartItemCount,
+            sendingOrder: _sendingOrder,
+            notasIniciais: _notesController.text,
+            onBack: () => _irPara(
+              _categoriaAberta.isEmpty ? _Estagio.categorias : _Estagio.produtos,
+            ),
+            onIncrement: (i) => _mudarQuantidade(i, 1),
+            onDecrement: (i) => _mudarQuantidade(i, -1),
+            onClear: () => setState(() => _cart = []),
+            onFinish: (notas) {
+              _notesController.text = notas;
+              _openConfirmScreen();
+            },
+          ),
+        );
+    }
+  }
+
+  String get _nomeDoRestaurante =>
+      _menu?.organizationName ?? _settings?.organizationName ?? 'DartChef';
+
+  /// Layout antigo (barra lateral + grade + painel do carrinho).
+  ///
+  /// Mantido para os casos que o fluxo novo nao cobre: cardapio que nao carregou
+  /// — onde esta o diagnostico de pareamento — e o acesso as configuracoes por
+  /// ali. Nao e alcancavel pelo caminho normal do cliente.
+  Widget _telaAntiga() {
 
     final categories = _menu?.categories ?? [];
     final tableCode = _settings?.tableCode ?? '--';

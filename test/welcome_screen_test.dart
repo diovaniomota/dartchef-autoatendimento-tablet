@@ -15,6 +15,7 @@ Widget _montar({
   String backgroundUrl = '',
   String primaryColor = '',
   VoidCallback? onStart,
+  VoidCallback? onSettings,
 }) {
   return MaterialApp(
     home: WelcomeScreen(
@@ -23,6 +24,7 @@ Widget _montar({
       backgroundUrl: backgroundUrl,
       primaryColor: primaryColor,
       onStart: onStart ?? () {},
+      onSettings: onSettings ?? () {},
     ),
   );
 }
