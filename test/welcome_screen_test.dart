@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:next_food_tablet_app/src/core/app_language.dart';
 import 'package:next_food_tablet_app/src/screens/welcome_screen.dart';
+import 'package:next_food_tablet_app/src/widgets/flag_icon.dart';
 
 Widget _montar({
   String logoUrl = '',
@@ -34,7 +35,37 @@ void main() {
 
     expect(find.text('HOUSE BEER CONVENIENCIA'), findsOneWidget);
     expect(find.text('TOQUE PARA COMEÇAR'), findsOneWidget);
-    expect(find.text('ESCOLHA SEU IDIOMA'), findsOneWidget);
+    expect(find.text('FAÇA SEU PEDIDO'), findsOneWidget);
+  });
+
+  testWidgets('a bandeira de cada idioma e desenhada', (tester) async {
+    await tester.pumpWidget(_montar());
+
+    // Uma FlagIcon por opcao. Sem isto a linha do idioma vira so texto, e foi
+    // exatamente o que a cliente viu na Espanha.
+    expect(find.byType(FlagIcon), findsNWidgets(AppLanguage.values.length));
+  });
+
+  testWidgets('a bandeira da Espanha tem o vermelho, o amarelo e o brasao', (tester) async {
+    await tester.pumpWidget(_montar());
+
+    final espanha = find.descendant(
+      of: find.byWidgetPredicate(
+        (w) => w is FlagIcon && w.language == AppLanguage.es,
+      ),
+      matching: find.byType(ColoredBox),
+    );
+
+    final cores = tester
+        .widgetList<ColoredBox>(espanha)
+        .map((box) => box.color)
+        .toSet();
+
+    expect(cores, contains(const Color(0xFFAA151B))); // faixas vermelhas
+    expect(cores, contains(const Color(0xFFF1BF00))); // faixa amarela
+    // Vermelho-amarelo-vermelho puro se confunde com outras bandeiras; os
+    // pilares em ouro escuro sao o que identifica a Espanha neste tamanho.
+    expect(cores, contains(const Color(0xFFC8930A)));
   });
 
   testWidgets('as tres opcoes de idioma aparecem no proprio idioma', (tester) async {
@@ -54,7 +85,7 @@ void main() {
 
     expect(appLanguage.value, AppLanguage.en);
     expect(find.text('TOUCH TO START'), findsOneWidget);
-    expect(find.text('CHOOSE YOUR LANGUAGE'), findsOneWidget);
+    expect(find.text('PLACE YOUR ORDER'), findsOneWidget);
   });
 
   testWidgets('o botao de comecar chama onStart', (tester) async {

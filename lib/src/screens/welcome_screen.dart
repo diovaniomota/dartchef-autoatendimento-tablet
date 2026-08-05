@@ -93,11 +93,11 @@ class WelcomeScreen extends StatelessWidget {
                               _marca(),
                               const SizedBox(height: 28),
                               Text(
-                                t('welcome.chooseLanguage'),
+                                t('welcome.headline'),
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 15,
+                                  fontSize: 17,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 1.6,
                                 ),

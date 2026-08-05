@@ -114,7 +114,11 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'order.addFirst': 'Adicione itens antes de enviar.',
     'order.added': '{product} adicionado!',
     'options.optional': 'opcional',
-    'welcome.chooseLanguage': 'ESCOLHA SEU IDIOMA',
+    // Chamada da tela de espera. Nao anuncia mais a escolha de idioma: as
+    // bandeiras logo abaixo ja dizem sozinhas o que sao, e o cliente que fala
+    // portugues nao precisa escolher nada — para ele o titulo era instrucao
+    // inutil no lugar mais visivel da tela.
+    'welcome.headline': 'FAÇA SEU PEDIDO',
     'welcome.start': 'TOQUE PARA COMEÇAR',
     'idle.title': 'Ainda está aí?',
     'idle.body': 'Sem resposta, o tablet volta para a tela inicial em {seconds}s.',
@@ -194,7 +198,7 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'order.addFirst': 'Add items before sending.',
     'order.added': '{product} added!',
     'options.optional': 'optional',
-    'welcome.chooseLanguage': 'CHOOSE YOUR LANGUAGE',
+    'welcome.headline': 'PLACE YOUR ORDER',
     'welcome.start': 'TOUCH TO START',
     'idle.title': 'Still there?',
     'idle.body': 'Without a reply, the tablet returns to the start screen in {seconds}s.',
@@ -274,7 +278,7 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'order.addFirst': 'Añada artículos antes de enviar.',
     'order.added': '¡{product} añadido!',
     'options.optional': 'opcional',
-    'welcome.chooseLanguage': 'ELIJA SU IDIOMA',
+    'welcome.headline': 'HAGA SU PEDIDO',
     'welcome.start': 'TOQUE PARA EMPEZAR',
     'idle.title': '¿Sigue ahí?',
     'idle.body': 'Sin respuesta, el tablet vuelve a la pantalla inicial en {seconds}s.',
