@@ -9,6 +9,9 @@ class TableMenu {
     required this.categories,
     required this.subcategories,
     required this.products,
+    this.logoUrl = '',
+    this.backgroundUrl = '',
+    this.primaryColor = '',
   });
 
   final String organizationId;
@@ -18,6 +21,15 @@ class TableMenu {
   final List<String> categories;
   final Map<String, List<String>> subcategories; // category name -> list of subcategory names
   final List<MenuProduct> products;
+
+  /// Marca do restaurante, exibida na tela de espera. Opcional: servidor em
+  /// versao anterior nao manda, e a tela cai num fundo escuro com o nome do
+  /// restaurante em texto.
+  final String logoUrl;
+  final String backgroundUrl;
+
+  /// Cor do botao "toque para comecar", em hex (#ea580c). Vazio = cor do app.
+  final String primaryColor;
 
   factory TableMenu.fromJson(Map<String, dynamic> json) {
     final organization = json['organization'] as Map<String, dynamic>? ?? {};
@@ -47,6 +59,9 @@ class TableMenu {
       categories: categories,
       subcategories: subcategories,
       products: products,
+      logoUrl: organization['logo_url']?.toString() ?? '',
+      backgroundUrl: organization['background_url']?.toString() ?? '',
+      primaryColor: organization['primary_color']?.toString() ?? '',
     );
   }
 }

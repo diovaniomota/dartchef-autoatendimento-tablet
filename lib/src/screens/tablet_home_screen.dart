@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:intl/intl.dart';
 
 import '../core/app_language.dart';
 import '../core/app_theme.dart';
+import '../core/table_session.dart';
 import '../models/cart_item.dart';
 import '../models/menu_product.dart';
 import '../models/table_menu.dart';
@@ -21,6 +23,7 @@ import '../widgets/sidebar_widget.dart';
 import '../widgets/top_bar_widget.dart';
 import 'confirm_order_screen.dart';
 import 'qr_scanner_screen.dart';
+import 'welcome_screen.dart';
 
 class TabletHomeScreen extends StatefulWidget {
   const TabletHomeScreen({super.key});
@@ -50,6 +53,27 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
   String _errorMessage = '';
   bool _showCart = false;
 
+  // ─── Sessao da mesa ───
+  //
+  // O tablet fica de pe na mesa o dia inteiro. Sem sessao, o proximo cliente
+  // sentava e encontrava o carrinho e o idioma de quem saiu.
+  //
+  // false = tela de espera. Vira true quando alguem toca em "comecar", e volta
+  // para false quando a mesa e paga/cancelada no PDV ou apos um tempo sem toque.
+  bool _sessionActive = false;
+
+  /// Alguma consulta JA viu comanda aberta nesta sessao.
+  ///
+  /// Marcado pela CONSULTA, nunca pelo envio do pedido: o endereco de historico
+  /// so devolve comanda aberta, e confiar no retorno do POST abriria uma janela
+  /// em que a consulta roda antes da linha aparecer, ve zero e derrubaria a
+  /// sessao do cliente no meio do pedido.
+  bool _sawOpenOrder = false;
+
+  Timer? _tableWatchTimer;
+  Timer? _idleTimer;
+  bool _idleWarningOpen = false;
+
   @override
   void initState() {
     super.initState();
@@ -61,6 +85,8 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _tableWatchTimer?.cancel();
+    _idleTimer?.cancel();
     _customerNameController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -72,6 +98,124 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
     if (state == AppLifecycleState.resumed) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     }
+  }
+
+  // ──────────────────── Sessao da mesa ────────────────────
+
+  void _startSession() {
+    setState(() => _sessionActive = true);
+    _sawOpenOrder = false;
+    _resetIdleTimer();
+    _startTableWatch();
+    // Recarrega o cardapio ao abrir a mesa: preco ou item alterado durante o
+    // dia chega sem ninguem reiniciar o tablet.
+    unawaited(_loadMenu());
+  }
+
+  /// Encerra a sessao e volta para a tela de espera.
+  void _endSession() {
+    // Guarda de reentrada: o fechamento da mesa e o fim da ociosidade podem
+    // chegar quase juntos, e sem isto o segundo faria um pop a mais e levaria
+    // a tela de espera embora.
+    if (!_sessionActive) return;
+
+    _tableWatchTimer?.cancel();
+    _idleTimer?.cancel();
+
+    // Fecha o aviso de ociosidade, se estiver aberto: sem isto ele ficaria
+    // sobre a tela de espera.
+    if (_idleWarningOpen && mounted) {
+      Navigator.of(context, rootNavigator: true).pop();
+      _idleWarningOpen = false;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _sessionActive = false;
+      _cart = [];
+      _showCart = false;
+      _searchTerm = '';
+      _activeCategory = 'Todos';
+      _activeSubcategory = null;
+    });
+    _customerNameController.clear();
+    _notesController.clear();
+    _sawOpenOrder = false;
+    // Turista escolhe ingles e vai embora; o proximo cliente encontraria a tela
+    // em outro idioma.
+    resetLanguage();
+  }
+
+  void _startTableWatch() {
+    _tableWatchTimer?.cancel();
+    _tableWatchTimer = Timer.periodic(kTableWatchInterval, (_) => _checkTableClosed());
+  }
+
+  /// Detecta que a mesa foi paga ou cancelada no PDV.
+  ///
+  /// O endereco de historico devolve SO comanda aberta. Entao "ja vi comanda
+  /// aberta e agora nao vejo nenhuma" significa que ela foi fechada ou
+  /// cancelada — sem precisar de rota nova no servidor.
+  Future<void> _checkTableClosed() async {
+    final settings = _settings;
+    if (settings == null || !settings.isComplete || !_sessionActive) return;
+
+    List<Map<String, dynamic>> orders;
+    try {
+      orders = await _apiService.fetchOrderHistory(settings);
+    } catch (_) {
+      // Falha de rede NAO encerra a sessao. Wi-Fi oscilando no salao e comum, e
+      // derrubar o cliente no meio do pedido por causa disso seria pior que
+      // demorar para voltar a tela de espera.
+      return;
+    }
+
+    if (!mounted || !_sessionActive) return;
+
+    if (orders.isNotEmpty) _sawOpenOrder = true;
+
+    if (shouldEndSessionAfterCheck(
+      sawOpenOrder: _sawOpenOrder,
+      openOrderCount: orders.length,
+    )) {
+      _endSession();
+    }
+  }
+
+  // ──────────────────── Ociosidade ────────────────────
+
+  void _resetIdleTimer() {
+    if (!_sessionActive) return;
+    _idleTimer?.cancel();
+    _idleTimer = Timer(kIdleLimit, _askIfStillThere);
+  }
+
+  /// Pergunta antes de encerrar por ociosidade.
+  ///
+  /// Encerrar direto no tempo limite tiraria da tela quem esta lendo o cardapio
+  /// com calma — o toque e a unica evidencia de presenca que o tablet tem, e
+  /// ler nao gera toque.
+  Future<void> _askIfStillThere() async {
+    if (!mounted || !_sessionActive || _idleWarningOpen) return;
+
+    _idleWarningOpen = true;
+
+    // A contagem vive DENTRO do dialogo e e ele quem se encerra no zero. Dois
+    // cronometros contando o mesmo tempo — um para mostrar, outro para fechar —
+    // sairiam de sincronia e o numero na tela mentiria.
+    final continuar = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const _IdleWarningDialog(),
+    );
+
+    _idleWarningOpen = false;
+
+    if (continuar == true) {
+      _resetIdleTimer();
+      return;
+    }
+    _endSession();
   }
 
   // ──────────────────── Bootstrap ────────────────────
@@ -1117,13 +1261,37 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
       );
     }
 
+    // Tela de espera. Fica sobre TODO o resto — inclusive sobre o erro de
+    // pareamento, que so interessa a quem esta configurando o tablet e chega
+    // pelo cardapio depois de tocar em comecar.
+    if (!_sessionActive) {
+      return PopScope(
+        canPop: false,
+        child: WelcomeScreen(
+          restaurantName: _menu?.organizationName
+              ?? _settings?.organizationName
+              ?? 'DartChef',
+          logoUrl: _menu?.logoUrl ?? '',
+          backgroundUrl: _menu?.backgroundUrl ?? '',
+          primaryColor: _menu?.primaryColor ?? '',
+          onStart: _startSession,
+        ),
+      );
+    }
+
     final categories = _menu?.categories ?? [];
     final tableCode = _settings?.tableCode ?? '--';
     final showCartPanel = _menu != null; // always show right panel when menu is loaded
 
     return PopScope(
       canPop: false,
-      child: Scaffold(
+      // Qualquer toque na tela conta como presenca e reinicia a contagem de
+      // ociosidade. Listener e nao GestureDetector: onPointerDown observa sem
+      // competir com os gestos dos widgets de baixo.
+      child: Listener(
+        behavior: HitTestBehavior.translucent,
+        onPointerDown: (_) => _resetIdleTimer(),
+        child: Scaffold(
         backgroundColor: AppTheme.background,
         body: SafeArea(
           child: Row(
@@ -1169,10 +1337,79 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
                   onEditNotes: _editItemNotes,
                   onSubmitOrder: _openConfirmScreen,
                 ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Aviso de ociosidade com contagem visivel.
+///
+/// A contagem aparece para o cliente entender que a tela vai mudar sozinha, em
+/// vez de o cardapio simplesmente desaparecer enquanto ele decidia.
+class _IdleWarningDialog extends StatefulWidget {
+  const _IdleWarningDialog();
+
+  @override
+  State<_IdleWarningDialog> createState() => _IdleWarningDialogState();
+}
+
+class _IdleWarningDialogState extends State<_IdleWarningDialog> {
+  int _segundos = kIdleWarningSeconds;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      setState(() => _segundos -= 1);
+      if (_segundos <= 0) {
+        timer.cancel();
+        // Devolve false: ninguem respondeu, a sessao encerra.
+        if (mounted) Navigator.of(context).pop(false);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppTheme.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Text(
+        t('idle.title'),
+        style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+      ),
+      content: Text(
+        t2('idle.body', {'seconds': '$_segundos'}),
+        style: const TextStyle(color: AppTheme.textMuted, fontSize: 14, height: 1.4),
+      ),
+      actions: [
+        SizedBox(
+          height: 58,
+          child: FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.accent,
+              padding: const EdgeInsets.symmetric(horizontal: 26),
+            ),
+            child: Text(
+              t('idle.stay'),
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
