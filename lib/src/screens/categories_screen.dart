@@ -40,18 +40,24 @@ class CategoriesScreen extends StatelessWidget {
   final VoidCallback onCartTap;
   final VoidCallback onHomeTap;
 
-  /// Foto que representa a categoria: a primeira, na ordem do cardapio, entre os
-  /// produtos dela que tenham imagem.
+  /// TODAS as fotos da categoria, na ordem do cardapio.
+  ///
+  /// Lista e nao uma foto so porque endereco podre e comum: o catalogo tem
+  /// produtos apontando para um projeto Supabase antigo que nem existe mais.
+  /// Devolvendo apenas a primeira, uma unica URL morta deixava o cartao vazio
+  /// mesmo havendo foto boa no terceiro produto da mesma categoria — foi
+  /// exatamente o que aconteceu com "Lanches".
   ///
   /// Ordem fixa de proposito. Sorteio deixaria o cartao mudando de foto a cada
   /// pedido, e o cliente que volta perde a referencia visual do que era o quê.
-  String _fotoDaCategoria(String categoria) {
+  List<String> _fotosDaCategoria(String categoria) {
+    final urls = <String>[];
     for (final produto in products) {
       if (produto.category != categoria) continue;
-      final url = produto.imageUrl ?? '';
-      if (url.isNotEmpty) return url;
+      final url = (produto.imageUrl ?? '').trim();
+      if (url.isNotEmpty && !urls.contains(url)) urls.add(url);
     }
-    return '';
+    return urls;
   }
 
   @override
@@ -99,9 +105,11 @@ class CategoriesScreen extends StatelessWidget {
   Widget _grade() {
     return LayoutBuilder(
       builder: (context, restricoes) {
-        // Duas colunas no tablet; uma so quando a largura nao dá para o cartao
-        // manter a foto reconhecivel.
-        final colunas = restricoes.maxWidth < 560 ? 1 : 2;
+        // Duas colunas sempre que couber. O limite era 560 e estava alto
+        // demais: o tablet de 7" EM PE tem cerca de 500 de largura e caia para
+        // uma coluna so, diferente da referencia. Abaixo de 380 o cartao ficaria
+        // estreito demais para a foto valer alguma coisa.
+        final colunas = restricoes.maxWidth < 380 ? 1 : 2;
         final sobra = categories.length % colunas;
 
         return ListView(
@@ -129,7 +137,7 @@ class CategoriesScreen extends StatelessWidget {
                       Expanded(
                         child: _CartaoCategoria(
                           nome: categories[j],
-                          imagemUrl: _fotoDaCategoria(categories[j]),
+                          imagens: _fotosDaCategoria(categories[j]),
                           // A ultima sozinha na fileira ocupa a largura toda,
                           // como no desenho aprovado — e assim ela nao fica
                           // metade da tela com um vazio do lado.
@@ -150,44 +158,84 @@ class CategoriesScreen extends StatelessWidget {
   }
 }
 
-class _CartaoCategoria extends StatelessWidget {
+/// Cartao de uma categoria.
+///
+/// Stateful por causa das fotos: recebe TODAS as fotos da categoria e tenta uma
+/// a uma. Endereco podre e comum no catalogo — ha produtos apontando para um
+/// projeto Supabase antigo que nem existe mais — e sem essa troca uma unica URL
+/// morta deixava o cartao vazio mesmo havendo foto boa logo em seguida.
+class _CartaoCategoria extends StatefulWidget {
   const _CartaoCategoria({
     required this.nome,
-    required this.imagemUrl,
+    required this.imagens,
     required this.alturaMenor,
     required this.onTap,
   });
 
   final String nome;
-  final String imagemUrl;
+  final List<String> imagens;
   final bool alturaMenor;
   final VoidCallback onTap;
 
   @override
+  State<_CartaoCategoria> createState() => _CartaoCategoriaState();
+}
+
+class _CartaoCategoriaState extends State<_CartaoCategoria> {
+  int _indice = 0;
+
+  String? get _urlAtual =>
+      _indice < widget.imagens.length ? widget.imagens[_indice] : null;
+
+  void _proximaFoto() {
+    if (_indice >= widget.imagens.length) return;
+    // setState dentro do errorBuilder precisa esperar o frame terminar: o
+    // callback roda DURANTE o build, e mexer no estado ali dispara
+    // "setState() called during build".
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _indice += 1);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final url = _urlAtual;
+
     return Material(
       color: AppTheme.surface,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
-        onTap: onTap,
+        onTap: widget.onTap,
         borderRadius: BorderRadius.circular(14),
-        child: SizedBox(
+        child: Container(
           // A que sobra sozinha na fileira fica um pouco mais baixa: ocupando a
           // largura toda com a mesma altura, ela dominaria a tela.
-          height: alturaMenor ? 124 : 152,
-          child: ClipRRect(
+          height: widget.alturaMenor ? 124 : 152,
+          decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
+            // Contorno claro, como na referencia: sem ele o cartao se dissolve
+            // no fundo preto quando a foto e escura nas bordas.
+            border: Border.all(color: Colors.white24),
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(13),
             child: Stack(
               fit: StackFit.expand,
               children: [
-                if (imagemUrl.isNotEmpty)
+                if (url != null)
                   Image.network(
-                    imagemUrl,
+                    url,
+                    // key pela URL: sem ela o Flutter reusa o elemento anterior
+                    // e nao refaz a requisicao ao trocar de foto.
+                    key: ValueKey(url),
                     fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => const ColoredBox(color: AppTheme.surfaceHigh),
+                    errorBuilder: (_, _, _) {
+                      _proximaFoto();
+                      return const _SemFotoCategoria();
+                    },
                   )
                 else
-                  const ColoredBox(color: AppTheme.surfaceHigh),
+                  const _SemFotoCategoria(),
 
                 // Veu SO na parte de baixo, e de cima para baixo.
                 //
@@ -211,11 +259,11 @@ class _CartaoCategoria extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
                   child: Align(
-                    // Embaixo e centralizado, como no desenho aprovado: e onde o
-                    // olho chega depois de ver a foto.
+                    // Embaixo e centralizado, como na referencia: e onde o olho
+                    // chega depois de ver a foto.
                     alignment: Alignment.bottomCenter,
                     child: Text(
-                      nome.toUpperCase(),
+                      widget.nome.toUpperCase(),
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -237,4 +285,21 @@ class _CartaoCategoria extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Fundo de categoria sem nenhuma foto que carregue.
+///
+/// Icone e nao um retangulo liso: cartao chapado parece tela quebrada, e o
+/// cliente fica sem saber se e para tocar. Com o icone fica claro que e um item
+/// do cardapio esperando foto.
+class _SemFotoCategoria extends StatelessWidget {
+  const _SemFotoCategoria();
+
+  @override
+  Widget build(BuildContext context) => const ColoredBox(
+        color: AppTheme.surfaceHigh,
+        child: Center(
+          child: Icon(Icons.restaurant_menu, color: Colors.white24, size: 40),
+        ),
+      );
 }
