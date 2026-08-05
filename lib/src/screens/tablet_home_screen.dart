@@ -184,12 +184,19 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
 
     if (orders.isNotEmpty) _sawOpenOrder = true;
 
-    if (shouldEndSessionAfterCheck(
+    if (!shouldEndSessionAfterCheck(
       sawOpenOrder: _sawOpenOrder,
       openOrderCount: orders.length,
     )) {
-      _endSession();
+      return;
     }
+
+    // Mesa fechada, mas alguem esta dentro de uma rota (configurando, por
+    // exemplo). Espera a proxima verificacao em vez de arrancar a tela por
+    // baixo — a mesa continua fechada, nao ha pressa.
+    if (_temRotaAcima()) return;
+
+    _endSession();
   }
 
   // ──────────────────── Ociosidade ────────────────────
@@ -203,8 +210,23 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
     _idleTimer?.cancel();
     _idleTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       if (!_sessionActive || _idleWarningOpen) return;
+      // Alguem esta com PIN, configuracao ou confirmacao de pedido aberto. A
+      // ociosidade existe para liberar a mesa para o proximo cliente, nao para
+      // interromper quem esta configurando o tablet.
+      if (_temRotaAcima()) return;
       if (userActivity.isIdle) _askIfStillThere();
     });
+  }
+
+  /// Alguma rota (dialogo, tela cheia) esta sobre a tela do cardapio.
+  ///
+  /// Encerrar a sessao com uma rota aberta arrancava a arvore por baixo dela e
+  /// quebrava o app de duas formas: "TextEditingController used after being
+  /// disposed" e "'_dependents.isEmpty': is not true".
+  bool _temRotaAcima() {
+    if (!mounted) return false;
+    final rota = ModalRoute.of(context);
+    return rota != null && !rota.isCurrent;
   }
 
   /// Pergunta antes de encerrar por ociosidade.
@@ -348,61 +370,10 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
   static const _settingsPin = '1707';
 
   Future<void> _requestSettingsAccess() async {
-    final controller = TextEditingController();
-    var error = false;
-
     final ok = await showDialog<bool>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: AppTheme.surface,
-          title: const Text('Configurações protegidas'),
-          content: SizedBox(
-            width: 320,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Digite o PIN para continuar.', style: TextStyle(color: AppTheme.textMuted)),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: controller,
-                  autofocus: true,
-                  obscureText: true,
-                  keyboardType: TextInputType.number,
-                  maxLength: 8,
-                  decoration: InputDecoration(
-                    counterText: '',
-                    labelText: 'PIN',
-                    errorText: error ? 'PIN incorreto.' : null,
-                  ),
-                  onSubmitted: (_) {
-                    if (controller.text.trim() == _settingsPin) {
-                      Navigator.of(ctx).pop(true);
-                    } else {
-                      setDialogState(() => error = true);
-                    }
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: const Text('Cancelar')),
-            FilledButton(
-              onPressed: () {
-                if (controller.text.trim() == _settingsPin) {
-                  Navigator.of(ctx).pop(true);
-                } else {
-                  setDialogState(() => error = true);
-                }
-              },
-              child: const Text('Entrar'),
-            ),
-          ],
-        ),
-      ),
+      builder: (ctx) => const _PinDialog(pinEsperado: _settingsPin),
     );
-    controller.dispose();
 
     if (ok == true) {
       if (!mounted) return;
@@ -1985,6 +1956,80 @@ class _OpcaoBotao extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Dialogo do PIN das configuracoes.
+///
+/// StatefulWidget de proposito, e nao um controller criado na funcao que abre o
+/// dialogo: assim o TextEditingController pertence ao widget e e liberado no
+/// dispose dele. Descartar o controller logo depois do `await showDialog`
+/// parecia funcionar, mas quebrava com "A TextEditingController was used after
+/// being disposed" quando o dialogo era fechado DE FORA — pela ociosidade — e
+/// ainda estava animando a saida.
+class _PinDialog extends StatefulWidget {
+  const _PinDialog({required this.pinEsperado});
+
+  final String pinEsperado;
+
+  @override
+  State<_PinDialog> createState() => _PinDialogState();
+}
+
+class _PinDialogState extends State<_PinDialog> {
+  final TextEditingController _controller = TextEditingController();
+  bool _errado = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _confirmar() {
+    if (_controller.text.trim() == widget.pinEsperado) {
+      Navigator.of(context).pop(true);
+      return;
+    }
+    setState(() => _errado = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppTheme.surface,
+      title: const Text('Configurações protegidas'),
+      content: SizedBox(
+        width: 320,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Digite o PIN para continuar.', style: TextStyle(color: AppTheme.textMuted)),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _controller,
+              autofocus: true,
+              obscureText: true,
+              keyboardType: TextInputType.number,
+              maxLength: 8,
+              decoration: InputDecoration(
+                counterText: '',
+                labelText: 'PIN',
+                errorText: _errado ? 'PIN incorreto.' : null,
+              ),
+              onSubmitted: (_) => _confirmar(),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(onPressed: _confirmar, child: const Text('Entrar')),
+      ],
     );
   }
 }
