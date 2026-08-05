@@ -165,7 +165,6 @@ class SubmittedOrder {
   const SubmittedOrder({
     required this.id,
     required this.numero,
-    required this.minutosEstimados,
   });
 
   final int id;
@@ -174,8 +173,6 @@ class SubmittedOrder {
   /// servidor para bater com o que a cozinha ve — nao e calculado aqui.
   final int numero;
 
-  final int minutosEstimados;
-
   factory SubmittedOrder.fromJson(Map<String, dynamic> json) {
     final id = int.tryParse('${json['id'] ?? 0}') ?? 0;
     return SubmittedOrder(
@@ -183,7 +180,6 @@ class SubmittedOrder {
       // Servidor em versao anterior nao manda numero: cai no id, que e o que
       // existia antes, em vez de mostrar zero na tela.
       numero: int.tryParse('${json['numero'] ?? ''}') ?? id,
-      minutosEstimados: int.tryParse('${json['minutos_estimados'] ?? ''}') ?? 0,
     );
   }
 }

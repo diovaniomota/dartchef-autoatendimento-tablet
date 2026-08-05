@@ -52,4 +52,24 @@ void main() {
   test('a consulta de fechamento nao martela o servidor', () {
     expect(kTableWatchInterval, greaterThanOrEqualTo(const Duration(seconds: 10)));
   });
+
+  test('mesa que ja pediu nao e liberada por ociosidade', () {
+    // Regra de salao: quem pediu esta comendo, e ficar minutos sem tocar no
+    // tablet e o normal. Quem libera a mesa e o pagamento no PDV ou o
+    // cancelamento — nunca o relogio.
+    //
+    // A regra vive na tela (o vigia checa _sawOpenOrder antes do relogio); aqui
+    // fica travado que "ja viu comanda" e o sinal de mesa ocupada, o mesmo que
+    // shouldEndSessionAfterCheck usa.
+    expect(
+      shouldEndSessionAfterCheck(sawOpenOrder: true, openOrderCount: 2),
+      isFalse,
+      reason: 'com comanda aberta a mesa esta ocupada',
+    );
+    expect(
+      shouldEndSessionAfterCheck(sawOpenOrder: true, openOrderCount: 0),
+      isTrue,
+      reason: 'so o fechamento no PDV libera',
+    );
+  });
 }

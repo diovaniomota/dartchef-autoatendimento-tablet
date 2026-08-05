@@ -235,6 +235,13 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
       // ociosidade existe para liberar a mesa para o proximo cliente, nao para
       // interromper quem esta configurando o tablet.
       if (_temRotaAcima()) return;
+
+      // Mesa que JA PEDIU nao e liberada por ociosidade. O cliente esta ali
+      // comendo, e ficar sem tocar no tablet por tres minutos e o normal — quem
+      // libera a mesa e o pagamento no PDV ou o cancelamento. A ociosidade
+      // continua valendo para quem so mexeu no tablet e foi embora sem pedir.
+      if (_sawOpenOrder) return;
+
       if (userActivity.isIdle) _askIfStillThere();
     });
   }
@@ -1023,8 +1030,10 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
           canPop: false,
           child: OrderSentScreen(
             numero: pedido.numero,
-            minutosEstimados: pedido.minutosEstimados,
             onFollow: _showMyOrders,
+            onKeepOrdering: () => _irPara(_Estagio.categorias),
+            // A mesa continua aberta ate o PDV fechar: nao ha por que prender o
+            // cliente nesta tela.
           ),
         );
 

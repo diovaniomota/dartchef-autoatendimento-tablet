@@ -86,10 +86,12 @@ class TabletTopBar extends StatelessWidget {
           // idioma da tela para achar o botao.
           const LanguageButton(),
 
+          // "Meus pedidos", nao "buscar": este botao sempre abriu a lista do que
+          // a mesa ja pediu, e o rotulo de lupa mentia sobre o que ele faz.
           if (onSearchTap != null)
             TabletBarButton(
-              icone: Icons.search,
-              texto: t('nav.search'),
+              icone: Icons.receipt_long_outlined,
+              texto: t('nav.myOrders'),
               onTap: onSearchTap!,
             ),
           TabletBarButton(

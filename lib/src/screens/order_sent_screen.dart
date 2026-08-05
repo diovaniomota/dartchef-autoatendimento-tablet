@@ -16,16 +16,22 @@ class OrderSentScreen extends StatelessWidget {
   const OrderSentScreen({
     super.key,
     required this.numero,
-    required this.minutosEstimados,
     required this.onFollow,
+    required this.onKeepOrdering,
   });
 
   final int numero;
-  final int minutosEstimados;
 
   /// Abre a lista de pedidos da mesa. Nao encerra a sessao: quem acabou de pedir
   /// costuma pedir mais.
   final VoidCallback onFollow;
+
+  /// Volta ao cardapio.
+  ///
+  /// Sem isto a tela era um beco sem saida: so dava para acompanhar o pedido, e
+  /// quem queria pedir a sobremesa ficava preso e chamava o garcom — o oposto
+  /// do que o tablet existe para fazer.
+  final VoidCallback onKeepOrdering;
 
   @override
   Widget build(BuildContext context) {
@@ -76,31 +82,6 @@ class OrderSentScreen extends StatelessWidget {
                         height: 1.1,
                       ),
                     ),
-                    if (minutosEstimados > 0) ...[
-                      const SizedBox(height: 14),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.schedule, color: AppTheme.textMuted, size: 20),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              // "Aproximado" no texto de proposito: nao ha tempo
-                              // por produto no cadastro, a estimativa e uma
-                              // conta simples. Prometer minuto exato geraria
-                              // reclamacao a cada pedido que atrasasse.
-                              t2('sent.estimate', {'minutes': '$minutosEstimados'}),
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                color: AppTheme.textSecondary,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
                     const SizedBox(height: 18),
                     Text(
                       t('sent.thanks'),
@@ -108,6 +89,32 @@ class OrderSentScreen extends StatelessWidget {
                       style: const TextStyle(color: AppTheme.textMuted, fontSize: 15),
                     ),
                     const SizedBox(height: 28),
+                    // Continuar pedindo em destaque, acompanhar em segundo
+                    // plano: a mesa que acabou de pedir a entrada quase sempre
+                    // vai pedir bebida e sobremesa depois.
+                    SizedBox(
+                      width: double.infinity,
+                      height: 66,
+                      child: FilledButton.icon(
+                        onPressed: onKeepOrdering,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: AppTheme.accent,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(Icons.restaurant_menu, size: 22),
+                        label: Text(
+                          t('sent.keepOrdering'),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
                     SizedBox(
                       width: double.infinity,
                       height: 58,
