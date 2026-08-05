@@ -172,7 +172,9 @@ class _CartaoCategoria extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: SizedBox(
-          height: alturaMenor ? 118 : 148,
+          // A que sobra sozinha na fileira fica um pouco mais baixa: ocupando a
+          // largura toda com a mesma altura, ela dominaria a tela.
+          height: alturaMenor ? 124 : 152,
           child: ClipRRect(
             borderRadius: BorderRadius.circular(14),
             child: Stack(
@@ -187,26 +189,35 @@ class _CartaoCategoria extends StatelessWidget {
                 else
                   const ColoredBox(color: AppTheme.surfaceHigh),
 
-                // Veu escuro: foto de comida tem muito ponto claro e o nome
-                // branco desaparecia justamente sobre a parte apetitosa.
+                // Veu SO na parte de baixo, e de cima para baixo.
+                //
+                // A primeira versao escurecia da esquerda para a direita com 95%
+                // de preto: o nome ficava legivel e a foto sumia — o oposto do
+                // objetivo, que e o cliente escolher pela imagem. Aqui os dois
+                // tercos de cima ficam limpos e o escuro entra so onde o texto
+                // pousa.
                 const DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [Color(0xF2000000), Color(0x66000000)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0x00000000), Color(0x33000000), Color(0xE6000000)],
+                      stops: [0.35, 0.55, 1.0],
                     ),
                   ),
                   child: SizedBox.expand(),
                 ),
 
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
                   child: Align(
-                    alignment: Alignment.centerLeft,
+                    // Embaixo e centralizado, como no desenho aprovado: e onde o
+                    // olho chega depois de ver a foto.
+                    alignment: Alignment.bottomCenter,
                     child: Text(
                       nome.toUpperCase(),
-                      maxLines: 3,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
@@ -214,7 +225,7 @@ class _CartaoCategoria extends StatelessWidget {
                         fontWeight: FontWeight.w900,
                         height: 1.15,
                         letterSpacing: 0.4,
-                        shadows: [Shadow(color: Colors.black, blurRadius: 8)],
+                        shadows: [Shadow(color: Colors.black, blurRadius: 10)],
                       ),
                     ),
                   ),
