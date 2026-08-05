@@ -75,6 +75,10 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
   /// Produto aberto na TELA 4.
   MenuProduct? _produtoAberto;
 
+  /// Linha do carrinho sendo corrigida, quando o detalhe foi aberto pelo
+  /// carrinho. Null = o detalhe vai ACRESCENTAR um item novo.
+  int? _itemEmEdicao;
+
   /// Pedido aceito pelo servidor, exibido na tela de "pedido enviado".
   SubmittedOrder? _pedidoEnviado;
 
@@ -825,6 +829,18 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
   void _abrirProduto(MenuProduct produto) {
     setState(() {
       _produtoAberto = produto;
+      _itemEmEdicao = null;
+      _estagio = _Estagio.detalhe;
+    });
+  }
+
+  /// Abre uma linha do carrinho para corrigir quantidade, variacao ou
+  /// observacao. Antes so dava para remover e montar tudo de novo.
+  void _editarItemDoCarrinho(int indice) {
+    if (indice < 0 || indice >= _cart.length) return;
+    setState(() {
+      _produtoAberto = _cart[indice].product;
+      _itemEmEdicao = indice;
       _estagio = _Estagio.detalhe;
     });
   }
@@ -855,6 +871,26 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
     String observacao,
   ) {
     final obs = observacao.trim();
+
+    // Editando: substitui a linha no lugar e volta ao carrinho, em vez de
+    // acrescentar uma segunda linha do mesmo item.
+    final emEdicao = _itemEmEdicao;
+    if (emEdicao != null && emEdicao < _cart.length) {
+      setState(() {
+        final atualizado = [..._cart];
+        atualizado[emEdicao] = CartItem(
+          product: produto,
+          quantity: quantidade,
+          notes: obs,
+          chosenOptions: escolhas,
+        );
+        _cart = atualizado;
+        _itemEmEdicao = null;
+        _estagio = _Estagio.carrinho;
+      });
+      return;
+    }
+
     setState(() {
       // Soma com a linha do MESMO produto, mesma observacao e mesmas variacoes.
       // Sem isso, uma caipira de vodka viraria "2x" junto com uma de cachaca e o
@@ -998,7 +1034,20 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
             produto: produto,
             currency: _currency,
             cartItemCount: _cartItemCount,
-            onBack: () => _irPara(_Estagio.produtos),
+            editando: _itemEmEdicao != null,
+            quantidadeInicial: _itemEmEdicao != null && _itemEmEdicao! < _cart.length
+                ? _cart[_itemEmEdicao!].quantity
+                : 1,
+            escolhasIniciais: _itemEmEdicao != null && _itemEmEdicao! < _cart.length
+                ? _cart[_itemEmEdicao!].chosenOptions
+                : const [],
+            observacaoInicial: _itemEmEdicao != null && _itemEmEdicao! < _cart.length
+                ? _cart[_itemEmEdicao!].notes
+                : '',
+            // Voltar do modo edicao leva ao carrinho, de onde se veio.
+            onBack: () => _irPara(
+              _itemEmEdicao != null ? _Estagio.carrinho : _Estagio.produtos,
+            ),
             onCartTap: () => _irPara(_Estagio.carrinho),
             onAdd: (quantidade, escolhas, observacao) =>
                 _adicionarAoCarrinho(produto, quantidade, escolhas, observacao),
@@ -1059,6 +1108,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
             onIncrement: (i) => _mudarQuantidade(i, 1),
             onDecrement: (i) => _mudarQuantidade(i, -1),
             onClear: () => setState(() => _cart = []),
+            onEditItem: _editarItemDoCarrinho,
             onFinish: (notas) {
               _notesController.text = notas;
               _irPara(_Estagio.confirmacao);

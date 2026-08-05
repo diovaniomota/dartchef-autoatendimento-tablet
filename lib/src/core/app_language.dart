@@ -164,6 +164,7 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'welcome.connect': 'CONECTAR TABLET',
     'sent.keepOrdering': 'PEDIR MAIS ITENS',
     'nav.myOrders': 'MEUS PEDIDOS',
+    'detail.saveChanges': 'SALVAR ALTERAÇÕES',
     'lang.label': 'Idioma',
   },
 
@@ -285,6 +286,7 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'welcome.connect': 'CONNECT TABLET',
     'sent.keepOrdering': 'ORDER MORE',
     'nav.myOrders': 'MY ORDERS',
+    'detail.saveChanges': 'SAVE CHANGES',
     'lang.label': 'Language',
   },
 
@@ -406,6 +408,7 @@ const Map<AppLanguage, Map<String, String>> _translations = {
     'welcome.connect': 'CONECTAR TABLET',
     'sent.keepOrdering': 'PEDIR MÁS',
     'nav.myOrders': 'MIS PEDIDOS',
+    'detail.saveChanges': 'GUARDAR CAMBIOS',
     'lang.label': 'Idioma',
   },
 };

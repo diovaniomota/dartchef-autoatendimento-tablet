@@ -21,6 +21,10 @@ class ProductDetailScreen extends StatefulWidget {
     required this.onBack,
     required this.onCartTap,
     required this.onAdd,
+    this.quantidadeInicial = 1,
+    this.escolhasIniciais = const [],
+    this.observacaoInicial = '',
+    this.editando = false,
   });
 
   final MenuProduct produto;
@@ -28,6 +32,15 @@ class ProductDetailScreen extends StatefulWidget {
   final int cartItemCount;
   final VoidCallback onBack;
   final VoidCallback onCartTap;
+
+  /// Estado atual do item quando se esta EDITANDO uma linha do carrinho.
+  ///
+  /// Sem isto, corrigir "sem cebola" obrigava a remover a linha e montar tudo de
+  /// novo — inclusive a variacao, que o cliente ja tinha escolhido.
+  final int quantidadeInicial;
+  final List<ProductOptionChoice> escolhasIniciais;
+  final String observacaoInicial;
+  final bool editando;
 
   /// Entrega o pedido montado: quantidade, escolhas e observacao.
   final void Function(
@@ -41,16 +54,28 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  final TextEditingController _observacao = TextEditingController();
+  late final TextEditingController _observacao =
+      TextEditingController(text: widget.observacaoInicial);
   final Map<int, ProductOptionChoice> _escolhas = {};
-  int _quantidade = 1;
+  late int _quantidade = widget.quantidadeInicial;
 
   @override
   void initState() {
     super.initState();
-    // Grupo opcional com uma unica opcao ja vem marcado: nao ha decisao a tomar.
+
+    // Editando: retoma o que ja estava escolhido. Os grupos sao percorridos para
+    // casar a escolha pelo ID, e nao confiar na ordem — opcao desativada no
+    // cadastro depois some sozinha em vez de virar item fantasma.
     for (final grupo in widget.produto.optionGroups) {
-      if (!grupo.required && grupo.choices.length == 1) {
+      for (final escolhida in widget.escolhasIniciais) {
+        if (grupo.choices.any((opcao) => opcao.id == escolhida.id)) {
+          _escolhas[grupo.id] = escolhida;
+        }
+      }
+      // Grupo opcional com uma unica opcao ja vem marcado: nao ha decisao a tomar.
+      if (!_escolhas.containsKey(grupo.id) &&
+          !grupo.required &&
+          grupo.choices.length == 1) {
         _escolhas[grupo.id] = grupo.choices.first;
       }
     }
@@ -318,7 +343,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: Text(
-              t('detail.addToCart'),
+              widget.editando ? t('detail.saveChanges') : t('detail.addToCart'),
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: 0.6),
             ),

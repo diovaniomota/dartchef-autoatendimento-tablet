@@ -26,6 +26,7 @@ class CartScreen extends StatefulWidget {
     required this.onDecrement,
     required this.onClear,
     required this.onFinish,
+    required this.onEditItem,
   });
 
   final List<CartItem> cart;
@@ -38,6 +39,9 @@ class CartScreen extends StatefulWidget {
   final ValueChanged<int> onIncrement;
   final ValueChanged<int> onDecrement;
   final VoidCallback onClear;
+
+  /// Abre o item para corrigir quantidade, variacao ou observacao.
+  final ValueChanged<int> onEditItem;
 
   /// Entrega a observacao geral do pedido junto, para nao depender de o
   /// controller viver fora desta tela.
@@ -86,6 +90,7 @@ class _CartScreenState extends State<CartScreen> {
                         itemBuilder: (context, i) => _LinhaCarrinho(
                           item: widget.cart[i],
                           currency: widget.currency,
+                          onTap: () => widget.onEditItem(i),
                           onIncrement: () => widget.onIncrement(i),
                           onDecrement: () => widget.onDecrement(i),
                         ),
@@ -310,12 +315,14 @@ class _LinhaCarrinho extends StatelessWidget {
   const _LinhaCarrinho({
     required this.item,
     required this.currency,
+    required this.onTap,
     required this.onIncrement,
     required this.onDecrement,
   });
 
   final CartItem item;
   final NumberFormat currency;
+  final VoidCallback onTap;
   final VoidCallback onIncrement;
   final VoidCallback onDecrement;
 
@@ -325,10 +332,17 @@ class _LinhaCarrinho extends StatelessWidget {
     final opcoes = item.optionsLabel;
     final obs = item.notes.trim();
 
-    return Container(
+    // A linha inteira abre o item para corrigir. So os botoes de quantidade
+    // ficam de fora, senao mexer no "+" abriria a tela de edicao junto.
+    return Material(
+      color: AppTheme.surface,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: AppTheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white12),
       ),
@@ -416,6 +430,8 @@ class _LinhaCarrinho extends StatelessWidget {
           ),
           _Passo(icone: Icons.add, onTap: onIncrement),
         ],
+      ),
+      ),
       ),
     );
   }

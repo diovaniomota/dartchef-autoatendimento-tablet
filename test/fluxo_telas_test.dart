@@ -264,6 +264,7 @@ void main() {
           onIncrement: (_) {},
           onDecrement: onDecrement ?? (_) {},
           onClear: () {},
+          onEditItem: (_) {},
           onFinish: onFinish ?? (_) {},
         ),
       );
@@ -316,6 +317,66 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Esvaziar o pedido?'), findsOneWidget);
+    });
+  });
+
+  group('editar item do carrinho', () {
+    testWidgets('o detalhe abre preenchido com o que ja estava escolhido',
+        (tester) async {
+      // Corrigir "sem cebola" nao pode obrigar a remontar o item do zero.
+      await tester.pumpWidget(MaterialApp(
+        home: ProductDetailScreen(
+          produto: _produto(grupos: const [_grupoMolho]),
+          currency: _moeda,
+          cartItemCount: 1,
+          editando: true,
+          quantidadeInicial: 3,
+          escolhasIniciais: const [ProductOptionChoice(id: 92, name: 'Barbecue', priceDelta: 2)],
+          observacaoInicial: 'sem cebola',
+          onBack: () {},
+          onCartTap: () {},
+          onAdd: (_, _, _) {},
+        ),
+      ));
+
+      expect(find.text('3'), findsOneWidget);
+      expect(find.text('sem cebola'), findsOneWidget);
+      // Botao diz salvar, nao adicionar: o item ja esta no carrinho.
+      expect(find.text('SALVAR ALTERAÇÕES'), findsOneWidget);
+      expect(find.text('ADICIONAR AO CARRINHO'), findsNothing);
+      // E o preco ja soma a variacao retomada: 14 + 2.
+      expect(find.textContaining('16,00'), findsOneWidget);
+    });
+
+    testWidgets('tocar na linha do carrinho pede a edicao daquele indice',
+        (tester) async {
+      int? indice;
+      final itens = [
+        CartItem(product: _produto(id: 1, nome: 'ALCATRA'), quantity: 1),
+        CartItem(product: _produto(id: 2, nome: 'FRANGO'), quantity: 1),
+      ];
+
+      await tester.pumpWidget(MaterialApp(
+        home: CartScreen(
+          cart: itens,
+          currency: _moeda,
+          subtotal: 28,
+          cartItemCount: 2,
+          sendingOrder: false,
+          notasIniciais: '',
+          onBack: () {},
+          onIncrement: (_) {},
+          onDecrement: (_) {},
+          onClear: () {},
+          onEditItem: (i) => indice = i,
+          onFinish: (_) {},
+        ),
+      ));
+
+      await tester.tap(find.text('FRANGO'));
+      await tester.pump();
+
+      expect(indice, 1);
     });
   });
 }
