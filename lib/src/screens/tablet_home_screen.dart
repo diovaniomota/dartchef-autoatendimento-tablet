@@ -1406,6 +1406,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
           child: CategoriesScreen(
             categories: _menu!.categories,
             products: _menu!.products,
+            categoryImages: _menu!.categoryImages,
             logoUrl: _menu!.logoUrl,
             restaurantName: _nomeDoRestaurante,
             cartItemCount: _cartItemCount,

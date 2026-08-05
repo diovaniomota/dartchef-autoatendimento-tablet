@@ -7,6 +7,7 @@ class TableMenu {
     required this.tableCode,
     required this.tableName,
     required this.categories,
+    this.categoryImages = const {},
     required this.subcategories,
     required this.products,
     this.logoUrl = '',
@@ -19,6 +20,10 @@ class TableMenu {
   final String tableCode;
   final String tableName;
   final List<String> categories;
+
+  /// Foto escolhida pelo restaurante para o cartao de cada categoria, por nome.
+  /// Categoria ausente aqui cai na foto de um produto dela.
+  final Map<String, String> categoryImages;
   final Map<String, List<String>> subcategories; // category name -> list of subcategory names
   final List<MenuProduct> products;
 
@@ -57,6 +62,9 @@ class TableMenu {
       tableCode: table['code']?.toString() ?? '',
       tableName: table['name']?.toString() ?? '',
       categories: categories,
+      categoryImages: ((json['category_images'] as Map<dynamic, dynamic>?) ?? const {})
+          .map((chave, valor) => MapEntry('$chave', '$valor'))
+        ..removeWhere((_, valor) => valor.trim().isEmpty),
       subcategories: subcategories,
       products: products,
       logoUrl: organization['logo_url']?.toString() ?? '',

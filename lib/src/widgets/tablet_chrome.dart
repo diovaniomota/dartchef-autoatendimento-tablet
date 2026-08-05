@@ -125,8 +125,10 @@ class TabletBottomBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: const BoxDecoration(
-        color: AppTheme.surface,
-        border: Border(top: BorderSide(color: AppTheme.border)),
+        color: AppTheme.background,
+        // Fio laranja no alto, como na referencia: separa a barra do conteudo
+        // sem precisar de sombra, que num fundo preto nao aparece.
+        border: Border(top: BorderSide(color: AppTheme.accent, width: 1.5)),
       ),
       child: Row(
         children: [
@@ -138,28 +140,37 @@ class TabletBottomBar extends StatelessWidget {
           const Spacer(),
           SizedBox(
             height: 52,
-            child: FilledButton.icon(
+            // Vazado, e nao laranja solido.
+            //
+            // A barra ja tem o fio laranja e o contador laranja; um botao
+            // inteiro preenchido puxava toda a atencao para baixo, competindo
+            // com a foto dos produtos, que e o que deve vender. O contorno
+            // mantem o destaque sem gritar.
+            child: OutlinedButton.icon(
               onPressed: onCartTap,
-              style: FilledButton.styleFrom(
-                backgroundColor: AppTheme.accent,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              style: OutlinedButton.styleFrom(
+                backgroundColor: AppTheme.surface,
+                side: const BorderSide(color: AppTheme.accent, width: 1.5),
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
-              icon: const Icon(Icons.shopping_cart, size: 20),
+              icon: const Icon(Icons.shopping_cart, size: 20, color: AppTheme.accent),
               label: Row(
                 children: [
                   Text(
                     t('nav.seeCart'),
                     style: const TextStyle(
+                      color: Colors.white,
                       fontSize: 14,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 0.5,
                     ),
                   ),
-                  if (cartItemCount > 0) ...[
-                    const SizedBox(width: 10),
-                    _Contador(valor: cartItemCount, cor: Colors.white24),
-                  ],
+                  const SizedBox(width: 10),
+                  // Sempre visivel, mesmo zerado: o cliente aprende onde fica a
+                  // conta de itens antes de ter o primeiro. Escondendo, o numero
+                  // aparecia do nada e ele nao sabia de onde veio.
+                  _Contador(valor: cartItemCount, cor: AppTheme.accent, sempreVisivel: true),
                 ],
               ),
             ),
@@ -221,10 +232,19 @@ class TabletBarButton extends StatelessWidget {
 }
 
 class _Contador extends StatelessWidget {
-  const _Contador({required this.valor, required this.cor});
+  const _Contador({
+    required this.valor,
+    required this.cor,
+    this.sempreVisivel = false,
+  });
 
   final int valor;
   final Color cor;
+
+  /// Mostra o circulo mesmo com zero. Vale no botao grande do rodape, onde o
+  /// contador e referencia fixa; nos botoes pequenos do topo um zero constante
+  /// so ocuparia espaco.
+  final bool sempreVisivel;
 
   @override
   Widget build(BuildContext context) {

@@ -21,6 +21,7 @@ class CategoriesScreen extends StatelessWidget {
     super.key,
     required this.categories,
     required this.products,
+    this.categoryImages = const {},
     required this.logoUrl,
     required this.restaurantName,
     required this.cartItemCount,
@@ -32,6 +33,9 @@ class CategoriesScreen extends StatelessWidget {
 
   final List<String> categories;
   final List<MenuProduct> products;
+
+  /// Foto escolhida pelo restaurante para cada categoria.
+  final Map<String, String> categoryImages;
   final String logoUrl;
   final String restaurantName;
   final int cartItemCount;
@@ -52,6 +56,14 @@ class CategoriesScreen extends StatelessWidget {
   /// pedido, e o cliente que volta perde a referencia visual do que era o quê.
   List<String> _fotosDaCategoria(String categoria) {
     final urls = <String>[];
+
+    // A foto CADASTRADA vem primeiro: quando a cliente escolheu uma, e ela que
+    // representa a categoria. A do produto continua atras, como retaguarda para
+    // quem ainda nao cadastrou — sem isso a tela ficaria vazia ate alguem subir
+    // sete fotos.
+    final escolhida = (categoryImages[categoria] ?? '').trim();
+    if (escolhida.isNotEmpty) urls.add(escolhida);
+
     for (final produto in products) {
       if (produto.category != categoria) continue;
       final url = (produto.imageUrl ?? '').trim();

@@ -29,10 +29,16 @@ MenuProduct _p({
       imageUrl: foto,
     );
 
-Widget _montar(List<MenuProduct> produtos, List<String> categorias) => MaterialApp(
+Widget _montar(
+  List<MenuProduct> produtos,
+  List<String> categorias, {
+  Map<String, String> fotosDeCategoria = const {},
+}) =>
+    MaterialApp(
       home: CategoriesScreen(
         categories: categorias,
         products: produtos,
+        categoryImages: fotosDeCategoria,
         logoUrl: '',
         restaurantName: 'House Beer',
         cartItemCount: 0,
@@ -106,5 +112,34 @@ void main() {
     await tester.pump();
 
     expect(find.text('SOBREMESAS'), findsOneWidget);
+  });
+
+  testWidgets('a foto CADASTRADA da categoria vem antes da foto do produto',
+      (tester) async {
+    // A cliente escolheu uma foto para representar a categoria: e ela que
+    // manda. A do produto so serve de retaguarda para quem ainda nao cadastrou.
+    await tester.pumpWidget(_montar(
+      [_p(id: 1, categoria: 'Bebidas', foto: 'https://produto.invalida/a.png')],
+      const ['Bebidas'],
+      fotosDeCategoria: const {'Bebidas': 'https://categoria.invalida/b.png'},
+    ));
+    await tester.pump();
+
+    final imagens = tester.widgetList<Image>(find.byType(Image)).toList();
+    expect(imagens, isNotEmpty);
+    final primeira = imagens.first.image as NetworkImage;
+    expect(primeira.url, 'https://categoria.invalida/b.png');
+  });
+
+  testWidgets('sem foto cadastrada, continua usando a do produto', (tester) async {
+    await tester.pumpWidget(_montar(
+      [_p(id: 1, categoria: 'Bebidas', foto: 'https://produto.invalida/a.png')],
+      const ['Bebidas'],
+    ));
+    await tester.pump();
+
+    final imagens = tester.widgetList<Image>(find.byType(Image)).toList();
+    expect(imagens, isNotEmpty);
+    expect((imagens.first.image as NetworkImage).url, 'https://produto.invalida/a.png');
   });
 }
