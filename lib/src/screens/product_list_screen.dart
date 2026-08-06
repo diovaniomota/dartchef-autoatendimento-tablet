@@ -150,7 +150,7 @@ class _LinhaProduto extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            produto.name.toUpperCase(),
+                            produto.displayName.toUpperCase(),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -160,10 +160,10 @@ class _LinhaProduto extends StatelessWidget {
                               height: 1.1,
                             ),
                           ),
-                          if (produto.description.isNotEmpty) ...[
+                          if (produto.displayDescription.isNotEmpty) ...[
                             const SizedBox(height: 4),
                             Text(
-                              produto.description,
+                              produto.displayDescription,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(

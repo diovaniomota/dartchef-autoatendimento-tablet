@@ -1,3 +1,4 @@
+import '../core/app_language.dart';
 class MenuProduct {
   const MenuProduct({
     required this.id,
@@ -9,6 +10,7 @@ class MenuProduct {
     this.imageUrl,
     this.description = '',
     this.optionGroups = const [],
+    this.translations = const {},
   });
 
   final int id;
@@ -34,6 +36,30 @@ class MenuProduct {
   /// com vodka ou com cachaca). Vazio na maioria dos produtos.
   final List<ProductOptionGroup> optionGroups;
 
+  /// Nome e descricao em outros idiomas, como vieram do cadastro.
+  ///
+  /// Chaves: name_en, name_es, description_en, description_es. Ausentes ou
+  /// vazias caem no portugues — cadastro pela metade nao pode deixar a tela em
+  /// branco para o turista.
+  final Map<String, String> translations;
+
+  /// Nome no idioma da tela.
+  String get displayName => _traduzido('name', name);
+
+  /// Descricao no idioma da tela.
+  String get displayDescription => _traduzido('description', description);
+
+  String _traduzido(String campo, String padrao) {
+    final sufixo = switch (appLanguage.value) {
+      AppLanguage.pt => null,
+      AppLanguage.en => 'en',
+      AppLanguage.es => 'es',
+    };
+    if (sufixo == null) return padrao;
+    final valor = (translations['${campo}_$sufixo'] ?? '').trim();
+    return valor.isEmpty ? padrao : valor;
+  }
+
   factory MenuProduct.fromJson(Map<String, dynamic> json) {
     return MenuProduct(
       id: json['id'] as int,
@@ -49,6 +75,8 @@ class MenuProduct {
           .map(ProductOptionGroup.fromJson)
           .where((group) => group.choices.isNotEmpty)
           .toList(),
+      translations: ((json['translations'] as Map<dynamic, dynamic>?) ?? const {})
+          .map((chave, valor) => MapEntry('$chave', '$valor')),
     );
   }
 }

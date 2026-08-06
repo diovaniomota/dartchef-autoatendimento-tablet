@@ -1,3 +1,4 @@
+import '../core/app_language.dart';
 import 'menu_product.dart';
 
 class TableMenu {
@@ -8,6 +9,7 @@ class TableMenu {
     required this.tableName,
     required this.categories,
     this.categoryImages = const {},
+    this.categoryTranslations = const {},
     required this.subcategories,
     required this.products,
     this.logoUrl = '',
@@ -24,6 +26,25 @@ class TableMenu {
   /// Foto escolhida pelo restaurante para o cartao de cada categoria, por nome.
   /// Categoria ausente aqui cai na foto de um produto dela.
   final Map<String, String> categoryImages;
+
+  /// Traducao do nome de cada categoria, indexada pelo nome ORIGINAL.
+  ///
+  /// O nome em portugues continua sendo a chave que liga produto e categoria; a
+  /// traducao e so rotulo de tela. Trocar a chave quebraria o agrupamento assim
+  /// que alguem escolhesse ingles.
+  final Map<String, Map<String, String>> categoryTranslations;
+
+  /// Nome da categoria no idioma da tela.
+  String labelForCategory(String categoria) {
+    final sufixo = switch (appLanguage.value) {
+      AppLanguage.pt => null,
+      AppLanguage.en => 'en',
+      AppLanguage.es => 'es',
+    };
+    if (sufixo == null) return categoria;
+    final valor = (categoryTranslations[categoria]?[sufixo] ?? '').trim();
+    return valor.isEmpty ? categoria : valor;
+  }
   final Map<String, List<String>> subcategories; // category name -> list of subcategory names
   final List<MenuProduct> products;
 
@@ -65,6 +86,12 @@ class TableMenu {
       categoryImages: ((json['category_images'] as Map<dynamic, dynamic>?) ?? const {})
           .map((chave, valor) => MapEntry('$chave', '$valor'))
         ..removeWhere((_, valor) => valor.trim().isEmpty),
+      categoryTranslations: ((json['category_translations'] as Map<dynamic, dynamic>?) ?? const {})
+          .map((categoria, traducoes) => MapEntry(
+                '$categoria',
+                ((traducoes as Map<dynamic, dynamic>?) ?? const {})
+                    .map((idioma, texto) => MapEntry('$idioma', '$texto')),
+              )),
       subcategories: subcategories,
       products: products,
       logoUrl: organization['logo_url']?.toString() ?? '',

@@ -375,7 +375,7 @@ class _LinhaCarrinho extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  item.product.name.toUpperCase(),
+                  item.product.displayName.toUpperCase(),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(

@@ -988,6 +988,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
             categories: _menu!.categories,
             products: _menu!.products,
             categoryImages: _menu!.categoryImages,
+            categoryLabel: _menu!.labelForCategory,
             logoUrl: _menu!.logoUrl,
             restaurantName: _nomeDoRestaurante,
             cartItemCount: _cartItemCount,
@@ -1004,7 +1005,8 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
         return PopScope(
           canPop: false,
           child: ProductListScreen(
-            categoryName: _categoriaAberta,
+            // Titulo traduzido; o filtro continua usando o nome original.
+            categoryName: _menu!.labelForCategory(_categoriaAberta),
             products: _produtosDaCategoria(_categoriaAberta),
             currency: _currency,
             cartItemCount: _cartItemCount,

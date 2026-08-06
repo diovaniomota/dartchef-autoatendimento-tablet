@@ -181,7 +181,7 @@ class _OrderConfirmScreenState extends State<OrderConfirmScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            item.product.name.toUpperCase(),
+                            item.product.displayName.toUpperCase(),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(

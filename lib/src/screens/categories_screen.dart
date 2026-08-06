@@ -22,6 +22,7 @@ class CategoriesScreen extends StatelessWidget {
     required this.categories,
     required this.products,
     this.categoryImages = const {},
+    this.categoryLabel,
     required this.logoUrl,
     required this.restaurantName,
     required this.cartItemCount,
@@ -38,6 +39,11 @@ class CategoriesScreen extends StatelessWidget {
 
   /// Foto escolhida pelo restaurante para cada categoria.
   final Map<String, String> categoryImages;
+
+  /// Rotulo da categoria no idioma da tela. O nome ORIGINAL continua sendo a
+  /// chave devolvida em onCategorySelected — traduzir a chave quebraria o
+  /// agrupamento dos produtos.
+  final String Function(String)? categoryLabel;
   final String logoUrl;
   final String restaurantName;
   final int cartItemCount;
@@ -154,7 +160,7 @@ class CategoriesScreen extends StatelessWidget {
                     for (var j = i; j < i + colunas && j < categories.length; j += 1) ...[
                       Expanded(
                         child: _CartaoCategoria(
-                          nome: categories[j],
+                          nome: categoryLabel?.call(categories[j]) ?? categories[j],
                           imagens: _fotosDaCategoria(categories[j]),
                           // A ultima sozinha na fileira ocupa a largura toda,
                           // como no desenho aprovado — e assim ela nao fica

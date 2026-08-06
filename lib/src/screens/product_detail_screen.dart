@@ -188,7 +188,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            widget.produto.name.toUpperCase(),
+            widget.produto.displayName.toUpperCase(),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 24,
@@ -196,10 +196,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               height: 1.1,
             ),
           ),
-          if (widget.produto.description.isNotEmpty) ...[
+          if (widget.produto.displayDescription.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
-              widget.produto.description,
+              widget.produto.displayDescription,
               style: const TextStyle(color: AppTheme.textMuted, fontSize: 14, height: 1.35),
             ),
           ],
