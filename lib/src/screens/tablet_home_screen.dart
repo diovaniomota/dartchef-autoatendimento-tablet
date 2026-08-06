@@ -915,7 +915,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
       // do mesmo grupo, e cair no carrinho a cada adicao obrigaria a voltar.
       if (_estagio == _Estagio.detalhe) _estagio = _Estagio.produtos;
     });
-    _showMsg(t2('order.added', {'product': produto.name}));
+    _showMsg(t2('order.added', {'product': produto.displayName}));
   }
 
   void _mudarQuantidade(int indice, int delta) {
@@ -1619,7 +1619,7 @@ class _ProductOptionsDialogState extends State<_ProductOptionsDialog> {
       backgroundColor: AppTheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(
-        widget.product.name,
+        widget.product.displayName,
         style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
       ),
       content: SizedBox(
