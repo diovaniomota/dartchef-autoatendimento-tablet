@@ -1,4 +1,5 @@
 import '../core/app_language.dart';
+import 'home_block.dart';
 import 'menu_product.dart';
 
 class TableMenu {
@@ -15,6 +16,7 @@ class TableMenu {
     this.logoUrl = '',
     this.backgroundUrl = '',
     this.primaryColor = '',
+    this.homeBlocks = const [],
   });
 
   final String organizationId;
@@ -57,6 +59,9 @@ class TableMenu {
   /// Cor do botao "toque para comecar", em hex (#ea580c). Vazio = cor do app.
   final String primaryColor;
 
+  /// Tela de inicio montada pelo restaurante. Vazia = arranjo padrao do app.
+  final List<HomeBlock> homeBlocks;
+
   factory TableMenu.fromJson(Map<String, dynamic> json) {
     final organization = json['organization'] as Map<String, dynamic>? ?? {};
     final table = json['table'] as Map<String, dynamic>? ?? {};
@@ -96,6 +101,7 @@ class TableMenu {
       products: products,
       logoUrl: organization['logo_url']?.toString() ?? '',
       backgroundUrl: organization['background_url']?.toString() ?? '',
+      homeBlocks: HomeBlock.listaFromJson(organization['home_layout']),
       primaryColor: organization['primary_color']?.toString() ?? '',
     );
   }

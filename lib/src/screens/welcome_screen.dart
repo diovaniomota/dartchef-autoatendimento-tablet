@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/app_language.dart';
+import '../models/home_block.dart';
 import '../core/app_theme.dart';
 import '../widgets/flag_icon.dart';
 
@@ -24,6 +25,7 @@ class WelcomeScreen extends StatelessWidget {
     required this.onStart,
     required this.onSettings,
     this.conectado = true,
+    this.blocks = const [],
   });
 
   final String restaurantName;
@@ -35,6 +37,12 @@ class WelcomeScreen extends StatelessWidget {
   final String primaryColor;
 
   final VoidCallback onStart;
+
+  /// Tela montada pelo restaurante no DartChef, em blocos empilhados.
+  ///
+  /// Vazia = arranjo padrao do app. Restaurante que nunca abriu o editor, ou
+  /// servidor em versao anterior, continua vendo exatamente a tela de sempre.
+  final List<HomeBlock> blocks;
 
   /// Acesso as configuracoes do tablet, protegido por PIN.
   ///
@@ -105,33 +113,9 @@ class WelcomeScreen extends StatelessWidget {
                           constraints: const BoxConstraints(maxWidth: 460),
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              _marca(),
-                              const SizedBox(height: 28),
-                              Text(
-                                t('welcome.headline'),
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.6,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              for (final opcao in AppLanguage.values)
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 10),
-                                  child: _BotaoIdioma(
-                                    language: opcao,
-                                    selecionado: opcao == idioma,
-                                    accent: _accent,
-                                    onTap: () => appLanguage.value = opcao,
-                                  ),
-                                ),
-                              const SizedBox(height: 22),
-                              if (conectado) _botaoComecar() else _avisoDesconectado(),
-                            ],
+                            children: blocks.isEmpty
+                                ? _colunaPadrao(idioma)
+                                : _colunaDeBlocos(idioma),
                           ),
                         ),
                       ),
@@ -166,11 +150,109 @@ class WelcomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _marca() {
+  /// Arranjo de sempre, para quem nunca montou a tela.
+  List<Widget> _colunaPadrao(AppLanguage idioma) => [
+        _marca(),
+        const SizedBox(height: 28),
+        Text(
+          t('welcome.headline'),
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.6,
+          ),
+        ),
+        const SizedBox(height: 16),
+        _escolhaDeIdioma(idioma),
+        const SizedBox(height: 22),
+        if (conectado) _botaoComecar() else _avisoDesconectado(),
+      ];
+
+  /// Arranjo montado no DartChef.
+  ///
+  /// As alturas seguem a mesma tabela que o editor usa para avisar "nao cabe":
+  /// se divergirem, a cliente aprova uma tela que corta no aparelho.
+  List<Widget> _colunaDeBlocos(AppLanguage idioma) {
+    final widgets = <Widget>[];
+    for (final bloco in blocks) {
+      if (widgets.isNotEmpty) widgets.add(const SizedBox(height: 12));
+      widgets.add(switch (bloco.type) {
+        'logo' => _marca(
+            altura: switch (bloco.tamanho) {
+              'pequeno' => 60.0,
+              'grande' => 130.0,
+              _ => 90.0,
+            },
+          ),
+        'texto' => Text(
+            bloco.texto,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Color(bloco.corTexto),
+              fontSize: switch (bloco.tamanho) {
+                'pequeno' => 18.0,
+                'grande' => 32.0,
+                'titulo' => 44.0,
+                _ => 24.0,
+              },
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+            ),
+          ),
+        'imagem' => ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              bloco.url,
+              height: switch (bloco.tamanho) {
+                'pequeno' => 90.0,
+                'grande' => 200.0,
+                _ => 140.0,
+              },
+              fit: BoxFit.contain,
+              // Imagem que nao carrega vira nada, e nao um icone de erro: a
+              // tela de espera e vitrine, e um quadrado quebrado no meio dela e
+              // pior que um espaco vazio.
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            ),
+          ),
+        'idiomas' => _escolhaDeIdioma(idioma),
+        'botao' => conectado ? _botaoComecar(rotulo: bloco.texto) : _avisoDesconectado(),
+        'espaco' => SizedBox(
+            height: switch (bloco.tamanho) {
+              'pequeno' => 12.0,
+              'grande' => 56.0,
+              _ => 28.0,
+            },
+          ),
+        _ => const SizedBox.shrink(),
+      });
+    }
+    return widgets;
+  }
+
+  Widget _escolhaDeIdioma(AppLanguage idioma) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final opcao in AppLanguage.values)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: _BotaoIdioma(
+                language: opcao,
+                selecionado: opcao == idioma,
+                accent: _accent,
+                onTap: () => appLanguage.value = opcao,
+              ),
+            ),
+        ],
+      );
+
+  Widget _marca({double altura = 150}) {
     if (logoUrl.isNotEmpty) {
       return Image.network(
         logoUrl,
-        height: 150,
+        height: altura,
         fit: BoxFit.contain,
         // Sem logo cadastrada, ou com endereco quebrado, o nome do restaurante
         // ocupa o lugar — a tela nunca fica sem identificacao.
@@ -240,7 +322,9 @@ class WelcomeScreen extends StatelessWidget {
         ),
       );
 
-  Widget _botaoComecar() => SizedBox(
+  /// [rotulo] vem do bloco quando o restaurante escreveu o proprio texto.
+  /// Vazio cai na traducao do app, para nao existir botao sem palavra nenhuma.
+  Widget _botaoComecar({String rotulo = ''}) => SizedBox(
         width: double.infinity,
         // 76 de altura: e o alvo que o cliente acerta de pe, sem mirar.
         height: 76,
@@ -256,7 +340,7 @@ class WelcomeScreen extends StatelessWidget {
             children: [
               Flexible(
                 child: Text(
-                  t('welcome.start'),
+                  rotulo.trim().isEmpty ? t('welcome.start') : rotulo,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 21,
