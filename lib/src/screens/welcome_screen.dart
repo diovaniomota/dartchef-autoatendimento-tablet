@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 import '../core/app_language.dart';
 import '../models/home_block.dart';
@@ -26,11 +29,15 @@ class WelcomeScreen extends StatelessWidget {
     required this.onSettings,
     this.conectado = true,
     this.blocks = const [],
+    this.tableCode = '',
+    this.tableName = '',
   });
 
   final String restaurantName;
   final String logoUrl;
   final String backgroundUrl;
+  final String tableCode;
+  final String tableName;
 
   /// Cor do botao vinda do cadastro, em hex. Vazia ou invalida cai no laranja
   /// do app.
@@ -38,10 +45,10 @@ class WelcomeScreen extends StatelessWidget {
 
   final VoidCallback onStart;
 
-  /// Tela montada pelo restaurante no DartChef, em blocos empilhados.
+  /// Tela montada pelo restaurante no DartChef.
   ///
-  /// Vazia = arranjo padrao do app. Restaurante que nunca abriu o editor, ou
-  /// servidor em versao anterior, continua vendo exatamente a tela de sempre.
+  /// Vazia = arranjo padrao do app. Com x/y/w/h = desenha cada widget no ponto
+  /// em que foi solto no editor. Sem posicao (cadastro antigo) = empilha.
   final List<HomeBlock> blocks;
 
   /// Acesso as configuracoes do tablet, protegido por PIN.
@@ -99,31 +106,36 @@ class WelcomeScreen extends StatelessWidget {
               child: SizedBox.expand(),
             ),
 
-            SafeArea(
-              child: LayoutBuilder(
-                builder: (context, restricoes) {
-                  // Tablet de 7" em pe sobra pouca altura: rolagem evita que o
-                  // botao de comecar fique fora da tela.
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: restricoes.maxHeight - 40),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 460),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: blocks.isEmpty
-                                ? _colunaPadrao(idioma)
-                                : _colunaDeBlocos(idioma),
+            if (blocks.any((bloco) => bloco.temPosicao))
+              // Canvas 1024x600, o mesmo do editor. FittedBox cobre aparelho
+              // com DPI diferente sem deslocar o que a cliente posicionou.
+              Center(child: _canvasLivre(idioma))
+            else
+              SafeArea(
+                child: LayoutBuilder(
+                  builder: (context, restricoes) {
+                    // Tablet de 7" em pe sobra pouca altura: rolagem evita que o
+                    // botao de comecar fique fora da tela.
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 20),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(minHeight: restricoes.maxHeight - 40),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 460),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: blocks.isEmpty
+                                  ? _colunaPadrao(idioma)
+                                  : _colunaDeBlocos(idioma),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
-            ),
 
             // POR ULTIMO no Stack, de proposito.
             //
@@ -170,25 +182,68 @@ class WelcomeScreen extends StatelessWidget {
         if (conectado) _botaoComecar() else _avisoDesconectado(),
       ];
 
-  /// Arranjo montado no DartChef.
-  ///
-  /// As alturas seguem a mesma tabela que o editor usa para avisar "nao cabe":
-  /// se divergirem, a cliente aprova uma tela que corta no aparelho.
+  /// Arranjo livre: cada widget no ponto em que foi solto no DartChef.
+  Widget _canvasLivre(AppLanguage idioma) {
+    return FittedBox(
+      fit: BoxFit.contain,
+      child: SizedBox(
+        width: 1024,
+        height: 600,
+        child: Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            for (final bloco in blocks)
+              if (bloco.temPosicao)
+                Positioned(
+                  left: bloco.x,
+                  top: bloco.y,
+                  width: bloco.w,
+                  height: bloco.h,
+                  child: _widgetDoBloco(bloco, idioma, preencher: true),
+                ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Arranjo montado no DartChef, cadastro antigo sem x/y.
   List<Widget> _colunaDeBlocos(AppLanguage idioma) {
     final widgets = <Widget>[];
     for (final bloco in blocks) {
       if (widgets.isNotEmpty) widgets.add(const SizedBox(height: 12));
-      widgets.add(switch (bloco.type) {
-        'logo' => _marca(
-            altura: switch (bloco.tamanho) {
-              'pequeno' => 60.0,
-              'grande' => 130.0,
-              _ => 90.0,
-            },
-          ),
-        'texto' => Text(
+      widgets.add(_widgetDoBloco(bloco, idioma));
+    }
+    return widgets;
+  }
+
+  Widget _widgetDoBloco(HomeBlock bloco, AppLanguage idioma, {bool preencher = false}) {
+    return switch (bloco.type) {
+      'logo' => () {
+          final marca = _marca(
+            altura: bloco.h ??
+                switch (bloco.tamanho) {
+                  'pequeno' => 60.0,
+                  'grande' => 130.0,
+                  _ => 90.0,
+                },
+          );
+          if (!preencher) return marca;
+          return FittedBox(fit: BoxFit.contain, child: marca);
+        }(),
+      'texto' => Align(
+          alignment: switch (bloco.alinhamento) {
+            'esquerda' => Alignment.centerLeft,
+            'direita' => Alignment.centerRight,
+            _ => Alignment.center,
+          },
+          child: Text(
             bloco.texto,
-            textAlign: TextAlign.center,
+            textAlign: switch (bloco.alinhamento) {
+              'esquerda' => TextAlign.left,
+              'direita' => TextAlign.right,
+              _ => TextAlign.center,
+            },
             style: TextStyle(
               color: Color(bloco.corTexto),
               fontSize: switch (bloco.tamanho) {
@@ -201,36 +256,319 @@ class WelcomeScreen extends StatelessWidget {
               height: 1.2,
             ),
           ),
-        'imagem' => ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              bloco.url,
-              height: switch (bloco.tamanho) {
-                'pequeno' => 90.0,
-                'grande' => 200.0,
-                _ => 140.0,
-              },
-              fit: BoxFit.contain,
-              // Imagem que nao carrega vira nada, e nao um icone de erro: a
-              // tela de espera e vitrine, e um quadrado quebrado no meio dela e
-              // pior que um espaco vazio.
-              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+        ),
+      'imagem' => bloco.url.isEmpty
+          ? const SizedBox.shrink()
+          : ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                bloco.url,
+                width: preencher ? double.infinity : null,
+                height: preencher
+                    ? double.infinity
+                    : switch (bloco.tamanho) {
+                        'pequeno' => 90.0,
+                        'grande' => 200.0,
+                        _ => 140.0,
+                      },
+                fit: BoxFit.contain,
+                // Imagem que nao carrega vira nada, e nao um icone de erro: a
+                // tela de espera e vitrine, e um quadrado quebrado no meio dela e
+                // pior que um espaco vazio.
+                errorBuilder: (_, _, _) => const SizedBox.shrink(),
+              ),
             ),
+      'idiomas' => preencher
+          ? FittedBox(
+              fit: BoxFit.contain,
+              child: SizedBox(width: 400, height: 194, child: _escolhaDeIdioma(idioma)),
+            )
+          : _escolhaDeIdioma(idioma),
+      'botao' => conectado
+          ? _botaoComecar(
+              rotulo: bloco.texto,
+              preencher: preencher,
+              cor: bloco.corOpicional == null ? null : Color(bloco.corOpicional!),
+            )
+          : (preencher
+              ? FittedBox(
+                  fit: BoxFit.contain,
+                  child: SizedBox(width: 380, height: 180, child: _avisoDesconectado()),
+                )
+              : _avisoDesconectado()),
+      'espaco' => SizedBox(
+          height: bloco.h ??
+              switch (bloco.tamanho) {
+                'pequeno' => 12.0,
+                'grande' => 56.0,
+                _ => 28.0,
+              },
+        ),
+      'painel' => DecoratedBox(
+          decoration: BoxDecoration(
+            color: Color(bloco.corOpicional ?? 0xFF111827).withValues(alpha: bloco.opacidade),
+            borderRadius: BorderRadius.circular(bloco.raio),
           ),
-        'idiomas' => _escolhaDeIdioma(idioma),
-        'botao' => conectado ? _botaoComecar(rotulo: bloco.texto) : _avisoDesconectado(),
-        'espaco' => SizedBox(
-            height: switch (bloco.tamanho) {
-              'pequeno' => 12.0,
-              'grande' => 56.0,
-              _ => 28.0,
-            },
+          child: const SizedBox.expand(),
+        ),
+      'linha' => DecoratedBox(
+          decoration: BoxDecoration(
+            color: Color(bloco.corOpicional ?? 0xFFFFFFFF),
+            borderRadius: BorderRadius.circular(99),
           ),
-        _ => const SizedBox.shrink(),
-      });
-    }
-    return widgets;
+          child: const SizedBox.expand(),
+        ),
+      'relogio' => _RelogioVivo(
+          formato: bloco.formato,
+          cor: Color(bloco.corTexto),
+          tamanho: bloco.tamanho,
+        ),
+      'data' => _textoCaixa(
+          _dataDeHoje(bloco.formato),
+          cor: Color(bloco.corTexto),
+          tamanho: 16,
+          weight: FontWeight.w700,
+        ),
+      'mesa' => _textoCaixa(
+          '${bloco.prefixo} ${_rotuloMesa()}',
+          cor: Color(bloco.corTexto),
+          tamanho: switch (bloco.tamanho) {
+            'pequeno' => 18.0,
+            'grande' => 32.0,
+            'titulo' => 44.0,
+            _ => 24.0,
+          },
+        ),
+      'qr' => _qrDaMesa(bloco),
+      'promo' => _cardPromo(bloco),
+      'selo' => _selo(bloco),
+      'icone' => Icon(
+          _iconeDe(bloco.icone),
+          color: Color(bloco.corTexto),
+          size: 48,
+        ),
+      'wifi' => _wifi(bloco),
+      'social' => _social(bloco),
+      'nome' => _textoCaixa(
+          restaurantName.toUpperCase(),
+          cor: Color(bloco.corTexto),
+          tamanho: switch (bloco.tamanho) {
+            'pequeno' => 18.0,
+            'grande' => 32.0,
+            'titulo' => 44.0,
+            _ => 24.0,
+          },
+          align: switch (bloco.alinhamento) {
+            'esquerda' => TextAlign.left,
+            'direita' => TextAlign.right,
+            _ => TextAlign.center,
+          },
+        ),
+      _ => const SizedBox.shrink(),
+    };
   }
+
+  String _rotuloMesa() {
+    final nome = tableName.trim();
+    if (nome.isNotEmpty) return nome.replaceFirst(RegExp(r'^mesa\s+', caseSensitive: false), '');
+    final codigo = tableCode.trim();
+    return codigo.isEmpty ? '—' : codigo;
+  }
+
+  String _dataDeHoje(String formato) {
+    final agora = DateTime.now();
+    if (formato == 'longo') {
+      const dias = ['segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado', 'domingo'];
+      const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+      final dia = dias[(agora.weekday + 6) % 7];
+      return '$dia, ${agora.day} de ${meses[agora.month - 1]}';
+    }
+    final d = agora.day.toString().padLeft(2, '0');
+    final m = agora.month.toString().padLeft(2, '0');
+    return '$d/$m/${agora.year}';
+  }
+
+  Widget _textoCaixa(String texto, {required Color cor, required double tamanho, FontWeight weight = FontWeight.w900, TextAlign align = TextAlign.center}) {
+    return Align(
+      alignment: switch (align) {
+        TextAlign.left => Alignment.centerLeft,
+        TextAlign.right => Alignment.centerRight,
+        _ => Alignment.center,
+      },
+      child: Text(
+        texto,
+        textAlign: align,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(color: cor, fontSize: tamanho, fontWeight: weight, height: 1.15),
+      ),
+    );
+  }
+
+  Widget _qrDaMesa(HomeBlock bloco) {
+    final valor = bloco.alvo == 'url' && bloco.url.trim().isNotEmpty
+        ? bloco.url.trim()
+        : 'MESA ${_rotuloMesa()}';
+    final fg = Color(bloco.corOpicional ?? 0xFF111827);
+    final bg = Color(bloco.props['fundo'] == null ? 0xFFFFFFFF : bloco.corFundo);
+    return DecoratedBox(
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Column(
+          children: [
+            Expanded(
+              child: QrImageView(
+                data: valor,
+                backgroundColor: bg,
+                eyeStyle: QrEyeStyle(eyeShape: QrEyeShape.square, color: fg),
+                dataModuleStyle: QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: fg),
+              ),
+            ),
+            if (bloco.mostrarRotulo)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  'Mesa ${_rotuloMesa()}',
+                  style: TextStyle(color: fg, fontSize: 12, fontWeight: FontWeight.w800),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _cardPromo(HomeBlock bloco) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Color(bloco.corFundo),
+        borderRadius: BorderRadius.circular(bloco.raio),
+        border: Border(left: BorderSide(color: Color(bloco.corOpicional ?? 0xFFEA580C), width: 5)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              bloco.texto,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Color(bloco.corOpicional ?? 0xFFEA580C),
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.8,
+              ),
+            ),
+            if (bloco.subtitulo.trim().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  bloco.subtitulo,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600, height: 1.2),
+                ),
+              ),
+            if (bloco.preco.trim().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  bloco.preco,
+                  style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _selo(HomeBlock bloco) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Color(bloco.corOpicional ?? 0xFFEA580C),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Center(
+        child: Text(
+          bloco.texto,
+          style: TextStyle(
+            color: Color(bloco.corSeloTexto),
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 0.8,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _wifi(HomeBlock bloco) {
+    final cor = Color(bloco.corTexto);
+    return Row(
+      children: [
+        Icon(Icons.wifi, color: cor, size: 26),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                bloco.rede.trim().isEmpty ? 'Wi-Fi' : bloco.rede,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: cor, fontSize: 16, fontWeight: FontWeight.w800),
+              ),
+              if (bloco.senha.trim().isNotEmpty)
+                Text('Senha: ${bloco.senha}', style: TextStyle(color: cor.withValues(alpha: 0.85), fontSize: 13)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _social(HomeBlock bloco) {
+    final cor = Color(bloco.corTexto);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(_iconeSocial(bloco.rede), color: cor, size: 22),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            bloco.texto,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: cor, fontSize: 16, fontWeight: FontWeight.w800),
+          ),
+        ),
+      ],
+    );
+  }
+
+  IconData _iconeDe(String id) => switch (id) {
+        'coracao' => Icons.favorite,
+        'talheres' => Icons.restaurant,
+        'vinho' => Icons.wine_bar,
+        'cafe' => Icons.local_cafe,
+        'chef' => Icons.soup_kitchen,
+        'fogo' => Icons.local_fire_department,
+        'musica' => Icons.music_note,
+        _ => Icons.star,
+      };
+
+  IconData _iconeSocial(String rede) => switch (rede) {
+        'facebook' => Icons.facebook,
+        'whatsapp' => Icons.chat,
+        'tiktok' => Icons.music_note,
+        _ => Icons.camera_alt,
+      };
 
   Widget _escolhaDeIdioma(AppLanguage idioma) => Column(
         mainAxisSize: MainAxisSize.min,
@@ -324,37 +662,38 @@ class WelcomeScreen extends StatelessWidget {
 
   /// [rotulo] vem do bloco quando o restaurante escreveu o proprio texto.
   /// Vazio cai na traducao do app, para nao existir botao sem palavra nenhuma.
-  Widget _botaoComecar({String rotulo = ''}) => SizedBox(
-        width: double.infinity,
-        // 76 de altura: e o alvo que o cliente acerta de pe, sem mirar.
-        height: 76,
-        child: FilledButton(
-          onPressed: onStart,
-          style: FilledButton.styleFrom(
-            backgroundColor: _accent,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Flexible(
-                child: Text(
-                  rotulo.trim().isEmpty ? t('welcome.start') : rotulo,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 21,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.8,
-                  ),
-                ),
+  /// [preencher] = ocupa o retangulo do editor; senao usa o tamanho fixo da
+  /// tela padrao (alvo grande o bastante para acertar de pe).
+  Widget _botaoComecar({String rotulo = '', bool preencher = false, Color? cor}) {
+    final botao = FilledButton(
+      onPressed: onStart,
+      style: FilledButton.styleFrom(
+        backgroundColor: cor ?? _accent,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Flexible(
+            child: Text(
+              rotulo.trim().isEmpty ? t('welcome.start') : rotulo,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 21,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.8,
               ),
-              const SizedBox(width: 10),
-              const Icon(Icons.touch_app, size: 26),
-            ],
+            ),
           ),
-        ),
-      );
+          const SizedBox(width: 10),
+          const Icon(Icons.touch_app, size: 26),
+        ],
+      ),
+    );
+    if (preencher) return SizedBox.expand(child: botao);
+    return SizedBox(width: double.infinity, height: 76, child: botao);
+  }
 }
 
 class _BotaoIdioma extends StatelessWidget {
@@ -414,6 +753,68 @@ class _BotaoIdioma extends StatelessWidget {
               if (selecionado) Icon(Icons.check_circle, color: accent, size: 24),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Relogio ao vivo. Sem isto a hora ficaria congelada na abertura da tela.
+class _RelogioVivo extends StatefulWidget {
+  const _RelogioVivo({
+    required this.formato,
+    required this.cor,
+    required this.tamanho,
+  });
+
+  final String formato;
+  final Color cor;
+  final String tamanho;
+
+  @override
+  State<_RelogioVivo> createState() => _RelogioVivoState();
+}
+
+class _RelogioVivoState extends State<_RelogioVivo> {
+  late DateTime _agora;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _agora = DateTime.now();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _agora = DateTime.now());
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final h = _agora.hour;
+    final m = _agora.minute.toString().padLeft(2, '0');
+    final texto = widget.formato == '12h'
+        ? '${h % 12 == 0 ? 12 : h % 12}:$m ${h < 12 ? 'AM' : 'PM'}'
+        : '${h.toString().padLeft(2, '0')}:$m';
+    final fonte = switch (widget.tamanho) {
+      'pequeno' => 18.0,
+      'grande' => 36.0,
+      'titulo' => 48.0,
+      _ => 28.0,
+    };
+    return Center(
+      child: Text(
+        texto,
+        style: TextStyle(
+          color: widget.cor,
+          fontSize: fonte,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 1,
         ),
       ),
     );

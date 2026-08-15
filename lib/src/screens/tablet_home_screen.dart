@@ -961,6 +961,8 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
           backgroundUrl: _menu?.backgroundUrl ?? '',
           primaryColor: _menu?.primaryColor ?? '',
           blocks: _menu?.homeBlocks ?? const [],
+          tableCode: _settings?.tableCode ?? _menu?.tableCode ?? '',
+          tableName: _menu?.tableName ?? '',
           onStart: _startSession,
           onSettings: _requestSettingsAccess,
           // Sem cardapio carregado nao ha o que pedir: a tela oferece conectar

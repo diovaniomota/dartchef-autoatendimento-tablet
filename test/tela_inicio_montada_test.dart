@@ -51,6 +51,40 @@ void main() {
       expect(menu.homeBlocks, isEmpty);
     });
 
+    test('le x y w h para desenhar no ponto em que foi solto', () {
+      final bloco = HomeBlock.fromJson({
+        'type': 'texto',
+        'x': 40,
+        'y': 80,
+        'w': 300,
+        'h': 48,
+        'props': {'texto': 'Oi'},
+      });
+      expect(bloco.temPosicao, isTrue);
+      expect(bloco.x, 40);
+      expect(bloco.y, 80);
+      expect(bloco.w, 300);
+      expect(bloco.h, 48);
+    });
+
+    test('painel e linha sao widgets conhecidos, nao somem da tela', () {
+      final blocos = HomeBlock.listaFromJson([
+        {'type': 'painel', 'props': {'cor': '#112233'}},
+        {'type': 'linha', 'props': {}},
+      ]);
+      expect(blocos.map((b) => b.type), ['painel', 'linha']);
+    });
+
+    test('widgets novos continuam conhecidos', () {
+      final blocos = HomeBlock.listaFromJson([
+        {'type': 'relogio', 'props': {}},
+        {'type': 'promo', 'props': {'texto': 'Combo'}},
+        {'type': 'qr', 'props': {}},
+        {'type': 'wifi', 'props': {'rede': 'Casa'}},
+      ]);
+      expect(blocos.map((b) => b.type), ['relogio', 'promo', 'qr', 'wifi']);
+    });
+
     test('bloco de tipo desconhecido e descartado, e o resto continua', () {
       // Layout gravado por uma versao mais nova do DartChef nao pode deixar a
       // mesa sem tela.
@@ -142,6 +176,35 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
       // A tela continua de pe e o botao segue alcancavel.
       expect(find.text('TOQUE PARA COMEÇAR'), findsOneWidget);
+    });
+
+    testWidgets('widget com x/y aparece no ponto, nao empilhado', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(1024, 600));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await _abrir(tester, [
+        HomeBlock(
+          type: 'texto',
+          x: 80,
+          y: 40,
+          w: 360,
+          h: 48,
+          props: const {'texto': 'CANTO SUPERIOR'},
+        ),
+        const HomeBlock(type: 'idiomas', x: 50, y: 200, w: 400, h: 200),
+        HomeBlock(
+          type: 'botao',
+          x: 300,
+          y: 480,
+          w: 380,
+          h: 76,
+          props: const {'texto': 'PEÇA AQUI'},
+        ),
+      ]);
+
+      expect(find.text('CANTO SUPERIOR'), findsOneWidget);
+      expect(find.text('PEÇA AQUI'), findsOneWidget);
+      expect(tester.getTopLeft(find.text('CANTO SUPERIOR')).dy, lessThan(120));
     });
 
     testWidgets('layout alto nao derruba a tela: ela rola', (tester) async {
