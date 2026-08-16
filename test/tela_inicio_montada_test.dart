@@ -67,6 +67,19 @@ void main() {
       expect(bloco.h, 48);
     });
 
+    test('texto com acao iniciar abre o cardapio, botao antigo tambem', () {
+      expect(_b('texto', {'acao': 'iniciar'}).iniciaPedido, isTrue);
+      expect(_b('texto', {'acao': 'nenhuma'}).iniciaPedido, isFalse);
+      expect(_b('botao').iniciaPedido, isTrue);
+      expect(_b('botao', {'acao': 'nenhuma'}).iniciaPedido, isFalse);
+    });
+
+    test('capa antiga continua com veu; escurecer false desliga', () {
+      expect(_b('painel').desligaVeu, isFalse);
+      expect(_b('painel', {'escurecer': true}).desligaVeu, isFalse);
+      expect(_b('painel', {'escurecer': false}).desligaVeu, isTrue);
+    });
+
     test('painel e linha sao widgets conhecidos, nao somem da tela', () {
       final blocos = HomeBlock.listaFromJson([
         {'type': 'painel', 'props': {'cor': '#112233'}},
@@ -165,6 +178,40 @@ void main() {
       expect(find.text('PORTUGUÊS'), findsOneWidget);
       expect(find.text('ENGLISH'), findsOneWidget);
       expect(find.text('ESPAÑOL'), findsOneWidget);
+    });
+
+    testWidgets('so o marcador da capa nao recoloca logo nem botao padrao', (tester) async {
+      await _abrir(tester, [
+        const HomeBlock(
+          type: 'painel',
+          x: 0,
+          y: 0,
+          w: 1024,
+          h: 600,
+          props: {'capa': true, 'opacidade': 0, 'escurecer': false},
+        ),
+      ]);
+      expect(find.text('TOQUE PARA COMEÇAR'), findsNothing);
+      expect(find.text('HOUSE BEER'), findsNothing);
+    });
+
+    testWidgets('sem o campo, o veu preto da capa continua', (tester) async {
+      await _abrir(tester, const []);
+      expect(find.byKey(const Key('veu-capa')), findsOneWidget);
+    });
+
+    testWidgets('escurecer false tira o veu preto da capa', (tester) async {
+      await _abrir(tester, [
+        const HomeBlock(
+          type: 'painel',
+          x: 0,
+          y: 0,
+          w: 1024,
+          h: 600,
+          props: {'escurecer': false},
+        ),
+      ]);
+      expect(find.byKey(const Key('veu-capa')), findsNothing);
     });
 
     testWidgets('imagem quebrada nao deixa quadrado de erro na vitrine', (tester) async {

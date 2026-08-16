@@ -88,6 +88,24 @@ class HomeBlock {
   String get preco => '${props['preco'] ?? ''}';
   bool get mostrarRotulo => props['rotulo'] != false;
 
+  /// Acao ao toque. Botao antigo, sem o campo, continua abrindo o cardapio.
+  String get acao {
+    final valor = '${props['acao'] ?? ''}';
+    if (valor == 'iniciar' || valor == 'nenhuma') return valor;
+    return type == 'botao' ? 'iniciar' : 'nenhuma';
+  }
+
+  bool get iniciaPedido => acao == 'iniciar';
+
+  /// Marcador da capa (foto de fundo). Nao e widget visivel: so guarda se o
+  /// toque na foto abre o cardapio e se o veu preto esta ligado. Sem ele, uma
+  /// tela esvaziada virava lista vazia e o app recoloca o arranjo padrao.
+  bool get eCapa => props['capa'] == true;
+
+  /// Veu preto sobre a foto de capa. `false` desliga. Sem o campo, o veu
+  /// continua ligado — telas antigas com texto branco nao somem na foto.
+  bool get desligaVeu => props['escurecer'] == false;
+
   /// Texto no idioma da tela, caindo no portugues quando falta a traducao —
   /// mesma regra do cardapio. Cadastro pela metade nunca deixa texto vazio.
   String campo(String chave) {

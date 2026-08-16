@@ -75,6 +75,10 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Arte pronta (capa com texto e foto) pede o veu desligado. Sem o campo,
+    // o veu fica — texto branco de widget nao some na foto clara.
+    final veu = !blocks.any((bloco) => bloco.desligaVeu);
+
     // Escuta o idioma para as tres opcoes redesenharem a marcacao na hora do
     // toque, sem depender de rebuild da raiz.
     return ValueListenableBuilder<AppLanguage>(
@@ -95,16 +99,18 @@ class WelcomeScreen extends StatelessWidget {
 
             // Veu escuro: sem ele o texto branco desaparece nas partes claras
             // da foto, e foto de comida tem muito ponto claro.
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xCC000000), Color(0xE6000000)],
+            if (veu)
+              const DecoratedBox(
+                key: Key('veu-capa'),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Color(0xCC000000), Color(0xE6000000)],
+                  ),
                 ),
+                child: SizedBox.expand(),
               ),
-              child: SizedBox.expand(),
-            ),
 
             if (blocks.any((bloco) => bloco.temPosicao))
               // Canvas 1024x600, o mesmo do editor. FittedBox cobre aparelho
@@ -184,6 +190,8 @@ class WelcomeScreen extends StatelessWidget {
 
   /// Arranjo livre: cada widget no ponto em que foi solto no DartChef.
   Widget _canvasLivre(AppLanguage idioma) {
+    final temInicio = blocks.any((bloco) => bloco.iniciaPedido);
+    final capaAbre = blocks.any((bloco) => bloco.eCapa && bloco.iniciaPedido);
     return FittedBox(
       fit: BoxFit.contain,
       child: SizedBox(
@@ -192,18 +200,36 @@ class WelcomeScreen extends StatelessWidget {
         child: Stack(
           clipBehavior: Clip.hardEdge,
           children: [
+            // Sem nenhum widget com acao "iniciar", o toque no vazio ainda
+            // abre o cardapio — senao a mesa fica bonita e inutil.
+            if (conectado && (!temInicio || capaAbre))
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onStart,
+                ),
+              ),
             for (final bloco in blocks)
-              if (bloco.temPosicao)
+              if (bloco.temPosicao && !bloco.eCapa)
                 Positioned(
                   left: bloco.x,
                   top: bloco.y,
                   width: bloco.w,
                   height: bloco.h,
-                  child: _widgetDoBloco(bloco, idioma, preencher: true),
+                  child: _comAcao(bloco, _widgetDoBloco(bloco, idioma, preencher: true)),
                 ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _comAcao(HomeBlock bloco, Widget child) {
+    if (!conectado || !bloco.iniciaPedido || bloco.type == 'idiomas') return child;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onStart,
+      child: child,
     );
   }
 
@@ -278,6 +304,7 @@ class WelcomeScreen extends StatelessWidget {
               preencher: preencher,
               cor: bloco.corOpicional == null ? null : Color(bloco.corOpicional!),
               bloco: bloco,
+              aoTocar: bloco.iniciaPedido ? onStart : null,
             )
           : (preencher
               ? FittedBox(
@@ -736,7 +763,7 @@ class WelcomeScreen extends StatelessWidget {
   /// Vazio cai na traducao do app, para nao existir botao sem palavra nenhuma.
   /// [preencher] = ocupa o retangulo do editor; senao usa o tamanho fixo da
   /// tela padrao (alvo grande o bastante para acertar de pe).
-  Widget _botaoComecar({String rotulo = '', bool preencher = false, Color? cor, HomeBlock? bloco}) {
+  Widget _botaoComecar({String rotulo = '', bool preencher = false, Color? cor, HomeBlock? bloco, VoidCallback? aoTocar}) {
     final raio = switch (bloco?.formatoBotao) {
       'pilula' => 999.0,
       'quadrado' => 0.0,
@@ -745,7 +772,7 @@ class WelcomeScreen extends StatelessWidget {
     };
     final corTexto = bloco?.corSeloTexto;
     final botao = FilledButton(
-      onPressed: onStart,
+      onPressed: aoTocar ?? (bloco == null ? onStart : (bloco.iniciaPedido ? onStart : null)),
       style: FilledButton.styleFrom(
         backgroundColor: cor ?? _accent,
         foregroundColor: corTexto == null ? Colors.white : Color(corTexto),
