@@ -77,7 +77,11 @@ class WelcomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     // Arte pronta (capa com texto e foto) pede o veu desligado. Sem o campo,
     // o veu fica — texto branco de widget nao some na foto clara.
-    final veu = !blocks.any((bloco) => bloco.desligaVeu);
+    // Sem layout gravado, usa o MESMO arranjo do editor (posicao livre).
+    // A coluna antiga (FAÇA SEU PEDIDO no centro) era outra tela, e a
+    // cliente via no tablet algo que nao tinha montado no DartChef.
+    final blocos = blocks.isEmpty ? HomeBlock.layoutPadrao() : blocks;
+    final veu = !blocos.any((bloco) => bloco.desligaVeu);
 
     // Escuta o idioma para as tres opcoes redesenharem a marcacao na hora do
     // toque, sem depender de rebuild da raiz.
@@ -97,25 +101,19 @@ class WelcomeScreen extends StatelessWidget {
                 errorBuilder: (_, _, _) => const ColoredBox(color: AppTheme.background),
               ),
 
-            // Veu escuro: sem ele o texto branco desaparece nas partes claras
-            // da foto, e foto de comida tem muito ponto claro.
+            // Mesmo 45% do preview do DartChef. O degradê antigo (80–90%)
+            // deixava a capa quase preta, diferente do que a cliente montou.
             if (veu)
               const DecoratedBox(
                 key: Key('veu-capa'),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0xCC000000), Color(0xE6000000)],
-                  ),
-                ),
+                decoration: BoxDecoration(color: Color(0x73000000)),
                 child: SizedBox.expand(),
               ),
 
-            if (blocks.any((bloco) => bloco.temPosicao))
+            if (blocos.any((bloco) => bloco.temPosicao))
               // Canvas 1024x600, o mesmo do editor. FittedBox cobre aparelho
               // com DPI diferente sem deslocar o que a cliente posicionou.
-              Center(child: _canvasLivre(idioma))
+              Center(child: _canvasLivre(idioma, blocos))
             else
               SafeArea(
                 child: LayoutBuilder(
@@ -189,9 +187,9 @@ class WelcomeScreen extends StatelessWidget {
       ];
 
   /// Arranjo livre: cada widget no ponto em que foi solto no DartChef.
-  Widget _canvasLivre(AppLanguage idioma) {
-    final temInicio = blocks.any((bloco) => bloco.iniciaPedido);
-    final capaAbre = blocks.any((bloco) => bloco.eCapa && bloco.iniciaPedido);
+  Widget _canvasLivre(AppLanguage idioma, List<HomeBlock> blocos) {
+    final temInicio = blocos.any((bloco) => bloco.iniciaPedido);
+    final capaAbre = blocos.any((bloco) => bloco.eCapa && bloco.iniciaPedido);
     return FittedBox(
       fit: BoxFit.contain,
       child: SizedBox(
@@ -209,7 +207,7 @@ class WelcomeScreen extends StatelessWidget {
                   onTap: onStart,
                 ),
               ),
-            for (final bloco in blocks)
+            for (final bloco in blocos)
               if (bloco.temPosicao && !bloco.eCapa)
                 Positioned(
                   left: bloco.x,
@@ -667,15 +665,19 @@ class WelcomeScreen extends StatelessWidget {
       };
 
   Widget _escolhaDeIdioma(AppLanguage idioma, {bool horizontal = false}) {
+    final opcoes = AppLanguage.values;
     final botoes = [
-      for (final opcao in AppLanguage.values)
+      for (var i = 0; i < opcoes.length; i++)
         Padding(
-          padding: EdgeInsets.only(bottom: horizontal ? 0 : 10, right: horizontal ? 8 : 0),
+          padding: EdgeInsets.only(
+            bottom: horizontal || i == opcoes.length - 1 ? 0 : 10,
+            right: horizontal && i != opcoes.length - 1 ? 8 : 0,
+          ),
           child: _BotaoIdioma(
-            language: opcao,
-            selecionado: opcao == idioma,
+            language: opcoes[i],
+            selecionado: opcoes[i] == idioma,
             accent: _accent,
-            onTap: () => appLanguage.value = opcao,
+            onTap: () => appLanguage.value = opcoes[i],
           ),
         ),
     ];

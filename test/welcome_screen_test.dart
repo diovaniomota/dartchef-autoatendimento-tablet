@@ -37,7 +37,8 @@ void main() {
 
     expect(find.text('HOUSE BEER CONVENIENCIA'), findsOneWidget);
     expect(find.text('TOQUE PARA COMEÇAR'), findsOneWidget);
-    expect(find.text('FAÇA SEU PEDIDO'), findsOneWidget);
+    expect(find.text('Bem-vindo!'), findsOneWidget);
+    expect(find.text('FAÇA SEU PEDIDO'), findsNothing);
   });
 
   testWidgets('a bandeira de cada idioma e desenhada', (tester) async {
@@ -102,7 +103,6 @@ void main() {
 
     expect(appLanguage.value, AppLanguage.en);
     expect(find.text('TOUCH TO START'), findsOneWidget);
-    expect(find.text('PLACE YOUR ORDER'), findsOneWidget);
   });
 
   testWidgets('o botao de comecar chama onStart', (tester) async {

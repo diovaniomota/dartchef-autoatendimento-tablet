@@ -9,6 +9,8 @@
 // de um tipo que este app nao conhece nao derruba a tela, e o texto do bloco
 // segue o idioma escolhido como o resto do cardapio.
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:next_food_tablet_app/src/core/app_language.dart';
@@ -137,12 +139,22 @@ void main() {
   });
 
   group('tela desenhada', () {
-    testWidgets('sem blocos, mostra a tela de sempre', (tester) async {
+    testWidgets('sem blocos, mostra o mesmo arranjo do editor, nao a coluna antiga', (tester) async {
       await _abrir(tester, const []);
       expect(find.text('HOUSE BEER'), findsOneWidget);
-      // As tres opcoes de idioma continuam la. Maiusculas: o botao mostra o
-      // nome no proprio idioma, em caixa alta.
+      expect(find.text('Bem-vindo!'), findsOneWidget);
+      expect(find.text('FAÇA SEU PEDIDO'), findsNothing);
       expect(find.text('PORTUGUÊS'), findsOneWidget);
+    });
+
+    test('listaFromJson le o JSON do servidor, nao so literal Dart', () {
+      final bruto = jsonDecode(
+        '[{"type":"texto","x":80,"y":40,"w":200,"h":48,"props":{"texto":"Oi","acao":"iniciar"}}]',
+      );
+      final blocos = HomeBlock.listaFromJson(bruto);
+      expect(blocos, hasLength(1));
+      expect(blocos.first.temPosicao, isTrue);
+      expect(blocos.first.texto, 'Oi');
     });
 
     testWidgets('com blocos, desenha o texto que o restaurante escreveu', (tester) async {

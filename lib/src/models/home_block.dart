@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import '../core/app_language.dart';
 
 /// Um bloco da tela de inicio, montado pelo restaurante no DartChef.
@@ -54,25 +56,96 @@ class HomeBlock {
 
   factory HomeBlock.fromJson(Map<String, dynamic> json) => HomeBlock(
         type: '${json['type'] ?? ''}',
-        props: (json['props'] as Map?)?.map((k, v) => MapEntry('$k', v)) ?? const {},
+        props: _mapa(json['props']) ?? const {},
         x: _num(json['x']),
         y: _num(json['y']),
         w: _num(json['w']),
         h: _num(json['h']),
       );
 
+  static Map<String, dynamic>? _mapa(dynamic item) {
+    if (item == null) return null;
+    if (item is Map<String, dynamic>) return item;
+    if (item is Map) {
+      return item.map((k, v) => MapEntry('$k', v));
+    }
+    try {
+      final decodificado = jsonDecode(jsonEncode(item));
+      if (decodificado is Map) {
+        return decodificado.map((k, v) => MapEntry('$k', v));
+      }
+    } catch (_) {}
+    return null;
+  }
+
   /// Le a lista inteira, descartando o que este app nao sabe desenhar.
   ///
   /// Bloco de um tipo que so existe em versao mais nova do DartChef nao pode
   /// derrubar a tela: some da tela e o resto continua.
+  ///
+  /// Aceita o array do JSON, string JSON (double-encode) e Map que no Flutter
+  /// web nao passa em `whereType<Map>()`.
   static List<HomeBlock> listaFromJson(dynamic bruto) {
-    if (bruto is! List) return const [];
-    return bruto
-        .whereType<Map>()
-        .map((item) => HomeBlock.fromJson(item.map((k, v) => MapEntry('$k', v))))
-        .where((bloco) => tiposConhecidos.contains(bloco.type))
-        .toList();
+    var fonte = bruto;
+    if (fonte is String && fonte.trim().isNotEmpty) {
+      try {
+        fonte = jsonDecode(fonte);
+      } catch (_) {
+        return const [];
+      }
+    }
+    if (fonte is! List) return const [];
+    final saida = <HomeBlock>[];
+    for (final item in fonte) {
+      final mapa = _mapa(item);
+      if (mapa == null) continue;
+      final bloco = HomeBlock.fromJson(mapa);
+      if (tiposConhecidos.contains(bloco.type)) saida.add(bloco);
+    }
+    return saida;
   }
+
+  /// O mesmo arranjo do editor do DartChef quando o restaurante nunca salvou
+  /// a tela. Sem isto o tablet empilhava no centro (FAÇA SEU PEDIDO) e a
+  /// preview do DartChef — posicao livre em 1024x600 — nao batia.
+  static List<HomeBlock> layoutPadrao() => const [
+        HomeBlock(
+          type: 'logo',
+          x: 372,
+          y: 40,
+          w: 280,
+          h: 90,
+          props: {'tamanho': 'medio'},
+        ),
+        HomeBlock(
+          type: 'texto',
+          x: 302,
+          y: 146,
+          w: 420,
+          h: 68,
+          props: {
+            'tamanho': 'titulo',
+            'texto': 'Bem-vindo!',
+            'cor': '#FFFFFF',
+            'alinhamento': 'centro',
+          },
+        ),
+        HomeBlock(
+          type: 'idiomas',
+          x: 312,
+          y: 228,
+          w: 400,
+          h: 200,
+        ),
+        HomeBlock(
+          type: 'botao',
+          x: 322,
+          y: 448,
+          w: 380,
+          h: 76,
+          props: {'acao': 'iniciar'},
+        ),
+      ];
 
   /// Tem retangulo proprio: o tablet desenha neste ponto, nao na pilha.
   bool get temPosicao => x != null && y != null && w != null && h != null;
