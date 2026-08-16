@@ -92,6 +92,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
 
   Timer? _tableWatchTimer;
   Timer? _idleTimer;
+  Timer? _homeRefreshTimer;
   bool _idleWarningOpen = false;
 
   @override
@@ -107,6 +108,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
     WidgetsBinding.instance.removeObserver(this);
     _tableWatchTimer?.cancel();
     _idleTimer?.cancel();
+    _homeRefreshTimer?.cancel();
     _customerNameController.dispose();
     _notesController.dispose();
     super.dispose();
@@ -117,6 +119,9 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+      // Voltou do segundo plano: puxa a tela de inicio de novo, sem exigir
+      // fechar o aplicativo.
+      if (!_sessionActive) unawaited(_loadMenu());
     }
   }
 
@@ -135,6 +140,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
     _startTableWatch();
     // Recarrega o cardapio ao abrir a mesa: preco ou item alterado durante o
     // dia chega sem ninguem reiniciar o tablet.
+    _stopHomeRefresh();
     unawaited(_loadMenu());
   }
 
@@ -179,6 +185,27 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
     // Turista escolhe ingles e vai embora; o proximo cliente encontraria a tela
     // em outro idioma.
     resetLanguage();
+    // Volta pra espera com o layout que o restaurante salvou agora, nao o
+    // de quando o app abriu de manha.
+    unawaited(_loadMenu());
+    _startHomeRefresh();
+  }
+
+  /// Na tela de espera, relê o cardapio de vez em quando.
+  ///
+  /// Sem isto, quem monta a tela no DartChef so via o resultado ao fechar o
+  /// aplicativo. Trinta segundos e curto o bastante pra ela conferir na mesa
+  /// e longo o bastante pra nao martelar a API o dia inteiro.
+  void _startHomeRefresh() {
+    _homeRefreshTimer?.cancel();
+    _homeRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!_sessionActive) unawaited(_loadMenu());
+    });
+  }
+
+  void _stopHomeRefresh() {
+    _homeRefreshTimer?.cancel();
+    _homeRefreshTimer = null;
   }
 
   void _startTableWatch() {
@@ -299,7 +326,10 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
       _settings = loaded;
       _loadingConfig = false;
     });
-    if (loaded.isComplete) await _loadMenu();
+    if (loaded.isComplete) {
+      await _loadMenu();
+      _startHomeRefresh();
+    }
   }
 
   Future<void> _loadMenu() async {

@@ -218,7 +218,7 @@ class WelcomeScreen extends StatelessWidget {
   }
 
   Widget _widgetDoBloco(HomeBlock bloco, AppLanguage idioma, {bool preencher = false}) {
-    return switch (bloco.type) {
+    final inner = switch (bloco.type) {
       'logo' => () {
           final marca = _marca(
             altura: bloco.h ??
@@ -231,31 +231,15 @@ class WelcomeScreen extends StatelessWidget {
           if (!preencher) return marca;
           return FittedBox(fit: BoxFit.contain, child: marca);
         }(),
-      'texto' => Align(
-          alignment: switch (bloco.alinhamento) {
-            'esquerda' => Alignment.centerLeft,
-            'direita' => Alignment.centerRight,
-            _ => Alignment.center,
+      'texto' => _textoEstilo(
+          bloco,
+          bloco.texto,
+          tamanho: switch (bloco.tamanho) {
+            'pequeno' => 18.0,
+            'grande' => 32.0,
+            'titulo' => 44.0,
+            _ => 24.0,
           },
-          child: Text(
-            bloco.texto,
-            textAlign: switch (bloco.alinhamento) {
-              'esquerda' => TextAlign.left,
-              'direita' => TextAlign.right,
-              _ => TextAlign.center,
-            },
-            style: TextStyle(
-              color: Color(bloco.corTexto),
-              fontSize: switch (bloco.tamanho) {
-                'pequeno' => 18.0,
-                'grande' => 32.0,
-                'titulo' => 44.0,
-                _ => 24.0,
-              },
-              fontWeight: FontWeight.w800,
-              height: 1.2,
-            ),
-          ),
         ),
       'imagem' => bloco.url.isEmpty
           ? const SizedBox.shrink()
@@ -271,7 +255,7 @@ class WelcomeScreen extends StatelessWidget {
                         'grande' => 200.0,
                         _ => 140.0,
                       },
-                fit: BoxFit.contain,
+                fit: bloco.ajuste == 'cobrir' ? BoxFit.cover : BoxFit.contain,
                 // Imagem que nao carrega vira nada, e nao um icone de erro: a
                 // tela de espera e vitrine, e um quadrado quebrado no meio dela e
                 // pior que um espaco vazio.
@@ -281,7 +265,11 @@ class WelcomeScreen extends StatelessWidget {
       'idiomas' => preencher
           ? FittedBox(
               fit: BoxFit.contain,
-              child: SizedBox(width: 400, height: 194, child: _escolhaDeIdioma(idioma)),
+              child: SizedBox(
+                width: bloco.direcao == 'horizontal' ? 640 : 400,
+                height: bloco.direcao == 'horizontal' ? 72 : 194,
+                child: _escolhaDeIdioma(idioma, horizontal: bloco.direcao == 'horizontal'),
+              ),
             )
           : _escolhaDeIdioma(idioma),
       'botao' => conectado
@@ -289,6 +277,7 @@ class WelcomeScreen extends StatelessWidget {
               rotulo: bloco.texto,
               preencher: preencher,
               cor: bloco.corOpicional == null ? null : Color(bloco.corOpicional!),
+              bloco: bloco,
             )
           : (preencher
               ? FittedBox(
@@ -318,20 +307,11 @@ class WelcomeScreen extends StatelessWidget {
           ),
           child: const SizedBox.expand(),
         ),
-      'relogio' => _RelogioVivo(
-          formato: bloco.formato,
-          cor: Color(bloco.corTexto),
-          tamanho: bloco.tamanho,
-        ),
-      'data' => _textoCaixa(
-          _dataDeHoje(bloco.formato),
-          cor: Color(bloco.corTexto),
-          tamanho: 16,
-          weight: FontWeight.w700,
-        ),
-      'mesa' => _textoCaixa(
+      'relogio' => _RelogioVivo(bloco: bloco),
+      'data' => _textoEstilo(bloco, _dataDeHoje(bloco.formato), tamanho: 16),
+      'mesa' => _textoEstilo(
+          bloco,
           '${bloco.prefixo} ${_rotuloMesa()}',
-          cor: Color(bloco.corTexto),
           tamanho: switch (bloco.tamanho) {
             'pequeno' => 18.0,
             'grande' => 32.0,
@@ -342,30 +322,119 @@ class WelcomeScreen extends StatelessWidget {
       'qr' => _qrDaMesa(bloco),
       'promo' => _cardPromo(bloco),
       'selo' => _selo(bloco),
-      'icone' => Icon(
-          _iconeDe(bloco.icone),
-          color: Color(bloco.corTexto),
-          size: 48,
-        ),
+      'icone' => _iconeDecorativo(bloco),
       'wifi' => _wifi(bloco),
       'social' => _social(bloco),
-      'nome' => _textoCaixa(
-          restaurantName.toUpperCase(),
-          cor: Color(bloco.corTexto),
+      'nome' => _textoEstilo(
+          bloco,
+          bloco.props['maiusculas'] == false ? restaurantName : restaurantName.toUpperCase(),
           tamanho: switch (bloco.tamanho) {
             'pequeno' => 18.0,
             'grande' => 32.0,
             'titulo' => 44.0,
             _ => 24.0,
           },
-          align: switch (bloco.alinhamento) {
-            'esquerda' => TextAlign.left,
-            'direita' => TextAlign.right,
-            _ => TextAlign.center,
-          },
         ),
       _ => const SizedBox.shrink(),
     };
+    if (!preencher) return inner;
+    return _caixaEstilo(bloco, inner);
+  }
+
+  Alignment _alinhamentoDe(HomeBlock bloco) {
+    final x = switch (bloco.alinhamento) {
+      'esquerda' => -1.0,
+      'direita' => 1.0,
+      _ => 0.0,
+    };
+    final y = switch (bloco.alinhamentoV) {
+      'topo' => -1.0,
+      'base' => 1.0,
+      _ => 0.0,
+    };
+    return Alignment(x, y);
+  }
+
+  TextStyle _estiloTexto(HomeBlock bloco, {required double tamanho, Color? cor}) {
+    return TextStyle(
+      color: cor ?? Color(bloco.corTexto),
+      fontSize: bloco.fonteResolvida(tamanho),
+      fontWeight: switch (bloco.peso) {
+        'regular' => FontWeight.w400,
+        'medio' => FontWeight.w600,
+        'negrito' => FontWeight.w800,
+        _ => FontWeight.w900,
+      },
+      fontFamily: switch (bloco.fonte) {
+        'serif' => 'serif',
+        'mono' => 'monospace',
+        _ => null,
+      },
+      fontStyle: bloco.italico ? FontStyle.italic : FontStyle.normal,
+      letterSpacing: bloco.espacoLetras,
+      shadows: bloco.sombraTexto
+          ? const [Shadow(color: Color(0x8C000000), blurRadius: 8, offset: Offset(0, 2))]
+          : null,
+    );
+  }
+
+  Widget _textoEstilo(HomeBlock bloco, String texto, {required double tamanho}) {
+    final valor = bloco.maiusculas ? texto.toUpperCase() : texto;
+    return Align(
+      alignment: _alinhamentoDe(bloco),
+      child: Text(
+        valor,
+        textAlign: switch (bloco.alinhamento) {
+          'esquerda' => TextAlign.left,
+          'direita' => TextAlign.right,
+          _ => TextAlign.center,
+        },
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+        style: _estiloTexto(bloco, tamanho: tamanho),
+      ),
+    );
+  }
+
+  Widget _caixaEstilo(HomeBlock bloco, Widget child) {
+    final proprio = {'painel', 'linha', 'promo', 'selo', 'botao', 'qr'}.contains(bloco.type);
+    final fundo = !proprio && bloco.corFundoCaixa != null
+        ? Color(bloco.corFundoCaixa!).withValues(alpha: bloco.opacidadeFundo)
+        : null;
+    return Opacity(
+      opacity: bloco.opacidadeWidget,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: fundo,
+          borderRadius: BorderRadius.circular(bloco.raio),
+          border: bloco.espessuraBorda > 0
+              ? Border.all(color: Color(bloco.corBorda ?? 0xFFFFFFFF), width: bloco.espessuraBorda)
+              : null,
+          boxShadow: bloco.sombra > 0
+              ? [
+                  BoxShadow(
+                    color: const Color(0x73000000),
+                    blurRadius: bloco.sombra,
+                    offset: Offset(0, bloco.sombra * 0.3),
+                  ),
+                ]
+              : null,
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(bloco.padding),
+          child: Align(alignment: _alinhamentoDe(bloco), child: child),
+        ),
+      ),
+    );
+  }
+
+  Widget _iconeDecorativo(HomeBlock bloco) {
+    final icone = Icon(_iconeDe(bloco.icone), color: Color(bloco.corTexto), size: bloco.fundoCirculo ? 28 : 48);
+    if (!bloco.fundoCirculo) return icone;
+    return DecoratedBox(
+      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), shape: BoxShape.circle),
+      child: Padding(padding: const EdgeInsets.all(12), child: icone),
+    );
   }
 
   String _rotuloMesa() {
@@ -488,20 +557,20 @@ class WelcomeScreen extends StatelessWidget {
   }
 
   Widget _selo(HomeBlock bloco) {
+    final raio = switch (bloco.formatoBotao) {
+      'quadrado' => 0.0,
+      'arredondado' => bloco.raio > 0 ? bloco.raio : 12.0,
+      _ => 999.0,
+    };
     return DecoratedBox(
       decoration: BoxDecoration(
         color: Color(bloco.corOpicional ?? 0xFFEA580C),
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(raio),
       ),
       child: Center(
         child: Text(
-          bloco.texto,
-          style: TextStyle(
-            color: Color(bloco.corSeloTexto),
-            fontSize: 14,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.8,
-          ),
+          bloco.maiusculas ? bloco.texto.toUpperCase() : bloco.texto,
+          style: _estiloTexto(bloco, tamanho: 14, cor: Color(bloco.corSeloTexto)),
         ),
       ),
     );
@@ -570,21 +639,24 @@ class WelcomeScreen extends StatelessWidget {
         _ => Icons.camera_alt,
       };
 
-  Widget _escolhaDeIdioma(AppLanguage idioma) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final opcao in AppLanguage.values)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _BotaoIdioma(
-                language: opcao,
-                selecionado: opcao == idioma,
-                accent: _accent,
-                onTap: () => appLanguage.value = opcao,
-              ),
-            ),
-        ],
-      );
+  Widget _escolhaDeIdioma(AppLanguage idioma, {bool horizontal = false}) {
+    final botoes = [
+      for (final opcao in AppLanguage.values)
+        Padding(
+          padding: EdgeInsets.only(bottom: horizontal ? 0 : 10, right: horizontal ? 8 : 0),
+          child: _BotaoIdioma(
+            language: opcao,
+            selecionado: opcao == idioma,
+            accent: _accent,
+            onTap: () => appLanguage.value = opcao,
+          ),
+        ),
+    ];
+    if (horizontal) {
+      return Row(children: [for (final b in botoes) Expanded(child: b)]);
+    }
+    return Column(mainAxisSize: MainAxisSize.min, children: botoes);
+  }
 
   Widget _marca({double altura = 150}) {
     if (logoUrl.isNotEmpty) {
@@ -664,13 +736,20 @@ class WelcomeScreen extends StatelessWidget {
   /// Vazio cai na traducao do app, para nao existir botao sem palavra nenhuma.
   /// [preencher] = ocupa o retangulo do editor; senao usa o tamanho fixo da
   /// tela padrao (alvo grande o bastante para acertar de pe).
-  Widget _botaoComecar({String rotulo = '', bool preencher = false, Color? cor}) {
+  Widget _botaoComecar({String rotulo = '', bool preencher = false, Color? cor, HomeBlock? bloco}) {
+    final raio = switch (bloco?.formatoBotao) {
+      'pilula' => 999.0,
+      'quadrado' => 0.0,
+      'arredondado' => (bloco?.raio ?? 14) > 0 ? bloco!.raio : 14.0,
+      _ => 14.0,
+    };
+    final corTexto = bloco?.corSeloTexto;
     final botao = FilledButton(
       onPressed: onStart,
       style: FilledButton.styleFrom(
         backgroundColor: cor ?? _accent,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        foregroundColor: corTexto == null ? Colors.white : Color(corTexto),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(raio)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -679,15 +758,15 @@ class WelcomeScreen extends StatelessWidget {
             child: Text(
               rotulo.trim().isEmpty ? t('welcome.start') : rotulo,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 21,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 0.8,
-              ),
+              style: bloco == null
+                  ? const TextStyle(fontSize: 21, fontWeight: FontWeight.w900, letterSpacing: 0.8)
+                  : _estiloTexto(bloco, tamanho: 21, cor: corTexto == null ? Colors.white : Color(corTexto)),
             ),
           ),
-          const SizedBox(width: 10),
-          const Icon(Icons.touch_app, size: 26),
+          if (bloco?.mostrarIcone != false) ...[
+            const SizedBox(width: 10),
+            const Icon(Icons.touch_app, size: 26),
+          ],
         ],
       ),
     );
@@ -761,15 +840,9 @@ class _BotaoIdioma extends StatelessWidget {
 
 /// Relogio ao vivo. Sem isto a hora ficaria congelada na abertura da tela.
 class _RelogioVivo extends StatefulWidget {
-  const _RelogioVivo({
-    required this.formato,
-    required this.cor,
-    required this.tamanho,
-  });
+  const _RelogioVivo({required this.bloco});
 
-  final String formato;
-  final Color cor;
-  final String tamanho;
+  final HomeBlock bloco;
 
   @override
   State<_RelogioVivo> createState() => _RelogioVivoState();
@@ -796,12 +869,15 @@ class _RelogioVivoState extends State<_RelogioVivo> {
 
   @override
   Widget build(BuildContext context) {
+    final bloco = widget.bloco;
     final h = _agora.hour;
     final m = _agora.minute.toString().padLeft(2, '0');
-    final texto = widget.formato == '12h'
-        ? '${h % 12 == 0 ? 12 : h % 12}:$m ${h < 12 ? 'AM' : 'PM'}'
-        : '${h.toString().padLeft(2, '0')}:$m';
-    final fonte = switch (widget.tamanho) {
+    final s = _agora.second.toString().padLeft(2, '0');
+    final cauda = bloco.segundos ? ':$s' : '';
+    final texto = bloco.formato == '12h'
+        ? '${h % 12 == 0 ? 12 : h % 12}:$m$cauda ${h < 12 ? 'AM' : 'PM'}'
+        : '${h.toString().padLeft(2, '0')}:$m$cauda';
+    final fonte = switch (bloco.tamanho) {
       'pequeno' => 18.0,
       'grande' => 36.0,
       'titulo' => 48.0,
@@ -811,10 +887,21 @@ class _RelogioVivoState extends State<_RelogioVivo> {
       child: Text(
         texto,
         style: TextStyle(
-          color: widget.cor,
-          fontSize: fonte,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1,
+          color: Color(bloco.corTexto),
+          fontSize: bloco.fonteResolvida(fonte),
+          fontWeight: switch (bloco.peso) {
+            'regular' => FontWeight.w400,
+            'medio' => FontWeight.w600,
+            'negrito' => FontWeight.w800,
+            _ => FontWeight.w900,
+          },
+          fontFamily: switch (bloco.fonte) {
+            'serif' => 'serif',
+            'mono' => 'monospace',
+            _ => null,
+          },
+          fontStyle: bloco.italico ? FontStyle.italic : FontStyle.normal,
+          letterSpacing: bloco.espacoLetras,
         ),
       ),
     );

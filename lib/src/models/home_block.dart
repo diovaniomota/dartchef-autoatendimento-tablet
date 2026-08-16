@@ -137,5 +137,32 @@ class HomeBlock {
     return (valor.clamp(0, 100)) / 100;
   }
 
-  double get raio => _num(props['raio']) ?? 16;
+  double get raio => _num(props['raio']) ?? 0;
+
+  double get padding => _num(props['padding']) ?? 0;
+  double get sombra => _num(props['sombra']) ?? 0;
+  double get opacidadeWidget => ((_num(props['opacidadeWidget']) ?? 100).clamp(0, 100)) / 100;
+  double get espessuraBorda => _num(props['espessuraBorda']) ?? 0;
+  double get opacidadeFundo => ((_num(props['opacidadeFundo']) ?? 0).clamp(0, 100)) / 100;
+  double get espacoLetras => _num(props['espacoLetras']) ?? 0;
+  double? get fontePx => _num(props['fontePx']);
+
+  int? get corBorda => _corDe('corBorda');
+  int? get corFundoCaixa => _corDe('corFundoCaixa');
+
+  String get fonte => '${props['fonte'] ?? 'sans'}';
+  String get peso => '${props['peso'] ?? 'preto'}';
+  String get alinhamentoV => '${props['alinhamentoV'] ?? 'centro'}';
+  String get ajuste => '${props['ajuste'] ?? 'conter'}';
+  String get formatoBotao => '${props['formatoBotao'] ?? 'pilula'}';
+  String get direcao => '${props['direcao'] ?? 'vertical'}';
+
+  bool get italico => props['italico'] == true;
+  bool get maiusculas => props['maiusculas'] == true;
+  bool get sombraTexto => props['sombraTexto'] == true;
+  bool get segundos => props['segundos'] == true;
+  bool get mostrarIcone => props['mostrarIcone'] != false;
+  bool get fundoCirculo => props['fundoCirculo'] == true;
+
+  double fonteResolvida(double fallback) => fontePx ?? fallback;
 }
