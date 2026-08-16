@@ -611,6 +611,17 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
         // da arvore antes de abrir o de progresso.
         await WidgetsBinding.instance.endOfFrame;
         if (!mounted) return;
+        final podeInstalar = await _updateService.canInstallApks();
+        if (!podeInstalar) {
+          await _kioskService.exitKiosk();
+          await _updateService.requestInstallPermission();
+          if (mounted) {
+            _showMsg(
+              'Autorize “Instalar apps desconhecidos” para o DartFood Mesa e toque de novo em Atualizar.',
+            );
+          }
+          return;
+        }
         await _downloadAndInstallUpdate(info.downloadUrl!);
       }
     } on UpdateException catch (e) {
@@ -654,13 +665,9 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
       );
 
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
-
-      // Fecha o app pra liberar a instalacao. Sem isso o instalador abre mas
-      // o app continua aberto por tras, e o Android nao substitui o pacote
-      // enquanto ele estiver rodando. O delay dá tempo do instalador
-      // aparecer antes da nossa Activity ser finalizada.
-      await Future.delayed(const Duration(seconds: 2));
-      await SystemNavigator.pop();
+      if (mounted) {
+        _showMsg('Confirme a instalação na tela do Android. Não feche o tablet.');
+      }
     } catch (e) {
       if (mounted) Navigator.of(context, rootNavigator: true).pop();
       // Falhou: volta pro modo quiosque, senao o tablet fica destravado.
