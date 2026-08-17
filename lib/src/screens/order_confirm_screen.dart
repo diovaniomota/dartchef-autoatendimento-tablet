@@ -6,13 +6,11 @@ import '../core/app_theme.dart';
 import '../models/cart_item.dart';
 import '../widgets/tablet_chrome.dart';
 
-/// Formas de pagamento oferecidas ao cliente.
+/// Confirmacao final: itens e dados do cliente.
 ///
-/// E INTENCAO, nao baixa financeira: o atendente ja chega na mesa sabendo como
-/// ela pretende pagar. Quem confirma o recebimento continua sendo o PDV.
-enum PaymentMethod { caixa, pix, cartao, dinheiro }
-
-/// Confirmacao final: itens, dados e forma de pagamento.
+/// A forma de pagamento saiu da tela: quem recebe e o PDV, e perguntar aqui so
+/// enchia a conferencia de uma escolha que nao muda nada no pedido nem obriga a
+/// mesa a nada depois.
 class OrderConfirmScreen extends StatefulWidget {
   const OrderConfirmScreen({
     super.key,
@@ -36,10 +34,10 @@ class OrderConfirmScreen extends StatefulWidget {
   final String nomeInicial;
   final VoidCallback onBack;
 
-  /// Entrega nome e forma escolhida. A mesa NAO vai aqui: ela vem do
-  /// pareamento do tablet, e deixar o cliente digitar abriria a porta para o
-  /// pedido cair na mesa do vizinho.
-  final void Function(String nome, PaymentMethod? forma) onSend;
+  /// Entrega o nome digitado. A mesa NAO vai aqui: ela vem do pareamento do
+  /// tablet, e deixar o cliente digitar abriria a porta para o pedido cair na
+  /// mesa do vizinho.
+  final void Function(String nome) onSend;
 
   @override
   State<OrderConfirmScreen> createState() => _OrderConfirmScreenState();
@@ -48,7 +46,6 @@ class OrderConfirmScreen extends StatefulWidget {
 class _OrderConfirmScreenState extends State<OrderConfirmScreen> {
   late final TextEditingController _nome =
       TextEditingController(text: widget.nomeInicial);
-  PaymentMethod? _forma;
 
   @override
   void dispose() {
@@ -80,17 +77,6 @@ class _OrderConfirmScreenState extends State<OrderConfirmScreen> {
                       _resumo(),
                       const SizedBox(height: 12),
                       _painel(child: _dadosDoCliente()),
-                      const SizedBox(height: 12),
-                      _painel(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _secao(t('confirm.payment')),
-                            const SizedBox(height: 10),
-                            _formasDePagamento(),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -103,9 +89,9 @@ class _OrderConfirmScreenState extends State<OrderConfirmScreen> {
     );
   }
 
-  /// Cada bloco num painel proprio, como na referencia: itens, dados e
-  /// pagamento sao tres decisoes distintas, e soltos na tela viravam uma coluna
-  /// unica sem hierarquia.
+  /// Cada bloco num painel proprio, como na referencia: itens e dados sao duas
+  /// decisoes distintas, e soltos na tela viravam uma coluna unica sem
+  /// hierarquia.
   Widget _painel({required Widget child}) => Container(
         width: double.infinity,
         padding: const EdgeInsets.all(14),
@@ -115,16 +101,6 @@ class _OrderConfirmScreenState extends State<OrderConfirmScreen> {
           border: Border.all(color: Colors.white12),
         ),
         child: child,
-      );
-
-  Widget _secao(String texto) => Text(
-        texto,
-        style: const TextStyle(
-          color: AppTheme.textMuted,
-          fontSize: 12.5,
-          fontWeight: FontWeight.w900,
-          letterSpacing: 1.1,
-        ),
       );
 
   Widget _resumo() => Container(
@@ -309,31 +285,6 @@ class _OrderConfirmScreenState extends State<OrderConfirmScreen> {
         borderSide: BorderSide(color: cor, width: largura),
       );
 
-  Widget _formasDePagamento() {
-    const dados = {
-      PaymentMethod.caixa: (Icons.point_of_sale, 'confirm.payCounter'),
-      PaymentMethod.pix: (Icons.qr_code_2, 'confirm.payPix'),
-      PaymentMethod.cartao: (Icons.credit_card, 'confirm.payCard'),
-      PaymentMethod.dinheiro: (Icons.payments_outlined, 'confirm.payCash'),
-    };
-
-    return Row(
-      children: [
-        for (final forma in PaymentMethod.values) ...[
-          Expanded(
-            child: _CartaoPagamento(
-              icone: dados[forma]!.$1,
-              rotulo: t(dados[forma]!.$2),
-              marcado: _forma == forma,
-              onTap: () => setState(() => _forma = forma),
-            ),
-          ),
-          if (forma != PaymentMethod.values.last) const SizedBox(width: 8),
-        ],
-      ],
-    );
-  }
-
   Widget _rodape() => Container(
         padding: const EdgeInsets.all(12),
         decoration: const BoxDecoration(
@@ -346,12 +297,11 @@ class _OrderConfirmScreenState extends State<OrderConfirmScreen> {
               width: double.infinity,
               height: 62,
               child: FilledButton(
-                // A forma de pagamento NAO bloqueia o envio: e informacao util
-                // para o atendente, nao requisito do pedido. Travar aqui faria
-                // a mesa desistir por causa de um campo opcional.
-                onPressed: widget.sendingOrder
-                    ? null
-                    : () => widget.onSend(_nome.text, _forma),
+                // O nome NAO bloqueia o envio: e cortesia para o atendente
+                // chamar a mesa, nao requisito do pedido. Travar aqui faria a
+                // mesa desistir por causa de um campo opcional.
+                onPressed:
+                    widget.sendingOrder ? null : () => widget.onSend(_nome.text),
                 style: FilledButton.styleFrom(
                   backgroundColor: AppTheme.success,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -385,58 +335,4 @@ class _OrderConfirmScreenState extends State<OrderConfirmScreen> {
           ],
         ),
       );
-}
-
-class _CartaoPagamento extends StatelessWidget {
-  const _CartaoPagamento({
-    required this.icone,
-    required this.rotulo,
-    required this.marcado,
-    required this.onTap,
-  });
-
-  final IconData icone;
-  final String rotulo;
-  final bool marcado;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: marcado ? AppTheme.accent.withValues(alpha: 0.18) : AppTheme.surface,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          height: 84,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: marcado ? AppTheme.accent : AppTheme.border,
-              width: marcado ? 2 : 1,
-            ),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icone, color: marcado ? AppTheme.accent : Colors.white, size: 26),
-              const SizedBox(height: 6),
-              Text(
-                rotulo,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: marcado ? AppTheme.accent : Colors.white,
-                  fontSize: 11.5,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }

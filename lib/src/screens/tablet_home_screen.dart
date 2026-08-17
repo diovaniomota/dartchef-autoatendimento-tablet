@@ -808,7 +808,7 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
   // linhas (uma com observacao, outra sem). O carrinho agora opera por indice
   // via _removeCartItemAt/_editItemNotes.
 
-  Future<void> _enviarPedido([PaymentMethod? forma]) async {
+  Future<void> _enviarPedido() async {
     // Rede de seguranca final contra pedido duplicado: vale para TODOS os
     // caminhos (duplo toque, telas empilhadas, dois botoes no mesmo frame).
     // _sendingOrder e ligado de forma sincrona logo abaixo e desligado no
@@ -828,7 +828,6 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
         items: _cart,
         customerName: _customerNameController.text,
         notes: _notesController.text,
-        paymentMethod: forma?.name ?? '',
       );
       if (!mounted) return;
       setState(() {
@@ -1108,9 +1107,9 @@ class _TabletHomeScreenState extends State<TabletHomeScreen> with WidgetsBinding
             sendingOrder: _sendingOrder,
             nomeInicial: _customerNameController.text,
             onBack: () => _irPara(_Estagio.carrinho),
-            onSend: (nome, forma) {
+            onSend: (nome) {
               _customerNameController.text = nome;
-              unawaited(_enviarPedido(forma));
+              unawaited(_enviarPedido());
             },
           ),
         );

@@ -68,7 +68,6 @@ class TabletApiService {
     required List<CartItem> items,
     required String customerName,
     required String notes,
-    required String paymentMethod,
   }) async {
     final baseUrl = _normalizeBaseUrl(settings.apiBaseUrl);
     final uri = Uri.parse('$baseUrl/api/public/orders');
@@ -81,9 +80,9 @@ class TabletApiService {
         'tableCode': settings.tableCode,
         'customerName': customerName.trim(),
         'notes': notes.trim(),
-        // Intencao de pagamento. O servidor descarta valor fora da lista, entao
-        // vazio aqui simplesmente nao registra nada.
-        'paymentMethod': paymentMethod,
+        // Sem paymentMethod: o tablet nao pergunta mais como a mesa pretende
+        // pagar. O campo continua opcional no servidor, que grava null quando
+        // ele nao vem — quem registra o recebimento e o PDV.
         'items': items
             .map((item) => {
                   'productId': item.product.id,

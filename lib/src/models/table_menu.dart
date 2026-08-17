@@ -62,11 +62,24 @@ class TableMenu {
   /// Tela de inicio montada pelo restaurante. Vazia = arranjo padrao do app.
   final List<HomeBlock> homeBlocks;
 
+  /// "Cardapio" e o balde que o servidor usa para produto que ficou sem
+  /// categoria nenhuma — nao e uma categoria do restaurante, e o resto.
+  ///
+  /// Na tela de escolha ele virava um cartao "CARDÁPIO" sem foto ao lado das
+  /// categorias de verdade, sem dizer nada ao cliente: quem toca em CALDOS sabe
+  /// o que vem, quem toca em CARDÁPIO nao. Fica de fora da lista aqui, e nao em
+  /// cada tela, para o filtro nao depender de alguem lembrar dele depois.
+  static bool _ehBaldeSemCategoria(String nome) {
+    final limpo = nome.trim().toLowerCase();
+    return limpo == 'cardápio' || limpo == 'cardapio';
+  }
+
   factory TableMenu.fromJson(Map<String, dynamic> json) {
     final organization = json['organization'] as Map<String, dynamic>? ?? {};
     final table = json['table'] as Map<String, dynamic>? ?? {};
     final categories = (json['categories'] as List<dynamic>? ?? [])
         .map((item) => item.toString())
+        .where((nome) => !_ehBaldeSemCategoria(nome))
         .toList();
     final products = (json['products'] as List<dynamic>? ?? [])
         .map((item) => MenuProduct.fromJson(item as Map<String, dynamic>))
