@@ -1,0 +1,371 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+import '../core/app_theme.dart';
+import '../models/cart_item.dart';
+import 'qr_scanner_screen.dart';
+
+class ConfirmOrderScreen extends StatelessWidget {
+  const ConfirmOrderScreen({
+    super.key,
+    required this.cart,
+    required this.tableCode,
+    required this.onConfirmWithComanda,
+    required this.sending,
+  });
+
+  final List<CartItem> cart;
+  final String tableCode;
+  final void Function(String comandaCode) onConfirmWithComanda;
+  final bool sending;
+
+  double get _subtotal => cart.fold(0.0, (s, i) => s + i.subtotal);
+  double get _serviceTax => _subtotal * 0.1;
+  double get _total => _subtotal + _serviceTax;
+  int get _itemCount => cart.fold(0, (s, i) => s + i.quantity);
+
+  static final _currency = NumberFormat.currency(locale: 'pt_BR', symbol: r'R$');
+
+  void _scanAndConfirm(BuildContext context) async {
+    final scannedCode = await Navigator.of(context).push<String>(
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+    );
+
+    if (scannedCode == null || scannedCode.isEmpty) return;
+    if (!context.mounted) return;
+
+    Navigator.of(context).pop();
+    onConfirmWithComanda(scannedCode);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppTheme.background,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // ── Top bar ──
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              decoration: const BoxDecoration(
+                color: AppTheme.surface,
+                border: Border(bottom: BorderSide(color: AppTheme.border)),
+                boxShadow: [BoxShadow(color: Color(0x1AFF7E5F), blurRadius: 8, offset: Offset(0, 4))],
+              ),
+              child: Row(
+                children: [
+                  // Back button
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.background,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Icon(Icons.arrow_back_rounded, size: 22, color: Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Title
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Confirme seu Pedido', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
+                        SizedBox(height: 2),
+                        Text('Revise os itens e escaneie a comanda para enviar', style: TextStyle(fontSize: 13, color: AppTheme.textMuted)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  // Scan QR button (top bar)
+                  GestureDetector(
+                    onTap: sending ? null : () => _scanAndConfirm(context),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: sending ? AppTheme.accent.withValues(alpha: 0.5) : AppTheme.accent,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: sending
+                            ? null
+                            : [BoxShadow(color: AppTheme.accent.withValues(alpha: 0.4), blurRadius: 12, offset: const Offset(0, 4))],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(sending ? Icons.hourglass_top_rounded : Icons.qr_code_scanner_rounded, size: 16, color: Colors.white),
+                          const SizedBox(width: 8),
+                          Text(
+                            sending ? 'ENVIANDO...' : 'ESCANEAR COMANDA',
+                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: 0.5),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Body: two columns ──
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Left: order items
+                  Expanded(
+                    flex: 3,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(24),
+                      itemCount: cart.length + 1, // +1 for header
+                      itemBuilder: (context, index) {
+                        if (index == 0) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.restaurant_rounded, size: 20, color: AppTheme.accent),
+                                const SizedBox(width: 10),
+                                Text('Itens do Pedido ($_itemCount)', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                              ],
+                            ),
+                          );
+                        }
+                        final item = cart[index - 1];
+                        return _OrderItemCard(item: item, currency: _currency);
+                      },
+                    ),
+                  ),
+
+                  // Right: summary
+                  Container(
+                    width: 340,
+                    margin: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: AppTheme.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppTheme.border),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.receipt_long_rounded, size: 20, color: AppTheme.accent),
+                            SizedBox(width: 10),
+                            Text('Resumo do Pedido', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Item list summary
+                        ...cart.map((item) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 24, height: 24,
+                                decoration: BoxDecoration(
+                                  color: AppTheme.accent.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                alignment: Alignment.center,
+                                child: Text('${item.quantity}x', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: AppTheme.accent)),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(item.product.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, color: Colors.white)),
+                              ),
+                              Text(_currency.format(item.subtotal), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+                            ],
+                          ),
+                        )),
+
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Divider(color: AppTheme.border, height: 1),
+                        ),
+
+                        // Subtotal
+                        _SummaryLine(label: 'Subtotal', value: _currency.format(_subtotal)),
+                        const SizedBox(height: 8),
+                        _SummaryLine(label: 'Taxa de Serviço (10%)', value: _currency.format(_serviceTax)),
+                        const SizedBox(height: 16),
+
+                        // Total
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accent.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppTheme.accent.withValues(alpha: 0.25)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('TOTAL', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                              Text(_currency.format(_total), style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppTheme.accent)),
+                            ],
+                          ),
+                        ),
+
+                        const Spacer(),
+
+                        // Instruction
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: AppTheme.background,
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppTheme.border),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.qr_code_rounded, size: 28, color: AppTheme.accent),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'Escaneie o QR Code da comanda para vincular e enviar o pedido.',
+                                  style: TextStyle(fontSize: 12, color: AppTheme.textMuted, height: 1.4),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Bottom scan button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton.icon(
+                            onPressed: sending ? null : () => _scanAndConfirm(context),
+                            icon: Icon(sending ? Icons.hourglass_top_rounded : Icons.qr_code_scanner_rounded, size: 18),
+                            label: Text(
+                              sending ? 'ENVIANDO...' : 'ESCANEAR E ENVIAR',
+                              style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, letterSpacing: 0.5),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.accent,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              elevation: 0,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Order item card with image ──
+class _OrderItemCard extends StatelessWidget {
+  const _OrderItemCard({required this.item, required this.currency});
+  final CartItem item;
+  final NumberFormat currency;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: Row(
+        children: [
+          // Product image
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: SizedBox(
+              width: 80, height: 80,
+              child: item.product.imageUrl != null && item.product.imageUrl!.isNotEmpty
+                  ? Image.network(item.product.imageUrl!, fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _placeholder())
+                  : _placeholder(),
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Info
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(item.product.name, maxLines: 2, overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                if (item.product.brand.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(item.product.brand, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+                ],
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppTheme.accent.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text('${item.quantity}x unidade', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.accent)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // Price
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(currency.format(item.subtotal),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
+              const SizedBox(height: 2),
+              Text('${currency.format(item.product.price)} / un',
+                  style: const TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _placeholder() => Container(
+    color: AppTheme.surfaceHigh,
+    alignment: Alignment.center,
+    child: const Icon(Icons.restaurant_rounded, size: 28, color: AppTheme.textMuted),
+  );
+}
+
+// ── Summary line ──
+class _SummaryLine extends StatelessWidget {
+  const _SummaryLine({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 13, color: AppTheme.textMuted)),
+        Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
+      ],
+    );
+  }
+}

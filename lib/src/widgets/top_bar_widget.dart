@@ -1,0 +1,178 @@
+import 'package:flutter/material.dart';
+
+import '../core/app_theme.dart';
+
+class TopBarWidget extends StatelessWidget {
+  const TopBarWidget({
+    super.key,
+    required this.tableCode,
+    required this.cartItemCount,
+    required this.onSearchChanged,
+    required this.onCartTap,
+    required this.onCallWaiter,
+    required this.onMyAccount,
+    required this.onRefresh,
+  });
+
+  // organizationName não é mais usado no top bar (removido do print)
+  final String tableCode;
+  final int cartItemCount;
+  final ValueChanged<String> onSearchChanged;
+  final VoidCallback onCartTap;
+  final VoidCallback onCallWaiter;
+  final VoidCallback onMyAccount;
+  final VoidCallback onRefresh;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: const BoxDecoration(
+        color: Color(0xFF111111),
+        border: Border(bottom: BorderSide(color: Color(0xFF2A2A2A))),
+      ),
+      child: Row(
+        children: [
+          // Campo de busca
+          Expanded(
+            child: Container(
+              height: 38,
+              decoration: BoxDecoration(
+                color: AppTheme.surface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppTheme.border),
+              ),
+              child: Row(
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 12),
+                    child: Icon(Icons.search_rounded, size: 18, color: AppTheme.textMuted),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      onChanged: onSearchChanged,
+                      style: const TextStyle(color: Colors.white, fontSize: 13),
+                      decoration: const InputDecoration(
+                        hintText: 'O que você deseja comer hoje?',
+                        hintStyle: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        filled: false,
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(vertical: 9),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 12),
+
+          // MESA badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppTheme.surface,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: AppTheme.border),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.table_restaurant_rounded, size: 14, color: AppTheme.textMuted),
+                const SizedBox(width: 6),
+                Text(
+                  'MESA $tableCode',
+                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white, letterSpacing: 0.3),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // GARÇOM
+          _TopButton(icon: Icons.support_agent_rounded, label: 'GARÇOM', onTap: onCallWaiter),
+          const SizedBox(width: 8),
+
+          // MINHA CONTA
+          _TopButton(icon: Icons.receipt_long_rounded, label: 'MINHA CONTA', onTap: onMyAccount),
+          const SizedBox(width: 8),
+
+          // ATUALIZAR
+          _TopButton(icon: Icons.refresh_rounded, label: '', onTap: onRefresh, iconOnly: true),
+          const SizedBox(width: 12),
+
+          // MEU PEDIDO (CTA principal)
+          GestureDetector(
+            onTap: onCartTap,
+            child: Container(
+              height: 38,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              decoration: BoxDecoration(
+                color: cartItemCount > 0 ? AppTheme.accent : AppTheme.surface,
+                borderRadius: BorderRadius.circular(10),
+                border: cartItemCount > 0 ? null : Border.all(color: AppTheme.border),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.shopping_cart_rounded, size: 16, color: cartItemCount > 0 ? Colors.white : AppTheme.textMuted),
+                  const SizedBox(width: 7),
+                  Text(
+                    cartItemCount > 0 ? 'MEU PEDIDO ($cartItemCount)' : 'MEU PEDIDO',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: cartItemCount > 0 ? Colors.white : AppTheme.textMuted,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TopButton extends StatelessWidget {
+  const _TopButton({required this.icon, required this.label, required this.onTap, this.iconOnly = false});
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool iconOnly;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Container(
+        height: 38,
+        padding: EdgeInsets.symmetric(horizontal: iconOnly ? 10 : 12),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppTheme.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15, color: AppTheme.textMuted),
+            if (!iconOnly && label.isNotEmpty) ...[
+              const SizedBox(width: 5),
+              Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppTheme.textMuted, letterSpacing: 0.3)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
